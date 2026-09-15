@@ -25,6 +25,41 @@
   justify-content: center;
 }
 
+.lista-salas {
+  width: 100%;
+  max-width: 320px;
+}
+
+.lista-salas h2 {
+  font-size: 1rem;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.lista-salas ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sala-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.sala-item-codigo {
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
 button {
   font: inherit;
   cursor: pointer;
