@@ -19,8 +19,14 @@ function prefereMenosMovimento() {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
+function formatarHorario(isoString) {
+  const data = new Date(isoString)
+  const dataFormatada = data.toLocaleDateString('pt-BR')
+  const horaFormatada = data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  return `${dataFormatada} ${horaFormatada}`
+}
+
 function linhaParaHistorico(linha) {
-  const { vencedor } = calcularResultado(linha.dado_hope, linha.dado_fear)
   return {
     id: linha.id,
     jogador: linha.jogador,
@@ -29,7 +35,9 @@ function linhaParaHistorico(linha) {
     corFear: linha.cor_fear,
     hope: linha.dado_hope,
     fear: linha.dado_fear,
-    vencedor,
+    vencedor: linha.vencedor,
+    total: linha.total,
+    horario: formatarHorario(linha.criado_em),
   }
 }
 
@@ -167,6 +175,8 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
       dado_hope: resultado.hope,
       dado_fear: resultado.fear,
       resultado: textoResultado(resultado),
+      vencedor: resultado.vencedor,
+      total: resultado.hope + resultado.fear,
     })
     if (error) console.error('Erro ao registrar rolagem:', error)
   }
@@ -298,6 +308,7 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
         <ul>
           {historico.map((item) => (
             <li key={item.id} className="historico-item">
+              <span className="historico-horario">{item.horario}</span>
               <span className="historico-jogador" style={{ color: item.cor }}>
                 {item.jogador}
               </span>
