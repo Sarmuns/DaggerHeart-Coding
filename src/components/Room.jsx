@@ -40,12 +40,15 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
   const rollerFearRef = useRef(null)
   const dieHopeRef = useRef(null)
   const dieFearRef = useRef(null)
+  const canalRef = useRef(null)
+  const presenceKeyRef = useRef(crypto.randomUUID())
   const [girandoHope, setGirandoHope] = useState(false)
   const [girandoFear, setGirandoFear] = useState(false)
   const [rolando, setRolando] = useState(false)
   const [ultimoResultado, setUltimoResultado] = useState(null)
   const [historico, setHistorico] = useState([])
   const [painelAberto, setPainelAberto] = useState(false)
+  const [jogadoresOnline, setJogadoresOnline] = useState([])
 
   useEffect(() => {
     const rollerHope = new DiceRoller(palcoHopeRef.current, ESCALA_DADO)
@@ -97,8 +100,11 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
 
     carregarHistorico()
 
-    const canal = supabase
-      .channel(`room:${sala.roomId}`)
+    const canal = supabase.channel(`room:${sala.roomId}`, {
+      config: { presence: { key: presenceKeyRef.current } },
+    })
+
+    canal
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'rolls', filter: `room_id=eq.${sala.roomId}` },
@@ -109,13 +115,47 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
           })
         },
       )
-      .subscribe()
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'rolls', filter: `room_id=eq.${sala.roomId}` },
+        (payload) => {
+          setHistorico((atual) => atual.filter((item) => item.id !== payload.old.id))
+        },
+      )
+      .on('presence', { event: 'sync' }, () => {
+        const estado = canal.presenceState()
+        setJogadoresOnline(Object.values(estado).flat())
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await canal.track({ nome: jogador.nome, cor: jogador.cor })
+        }
+      })
+
+    canalRef.current = canal
 
     return () => {
       ativo = false
+      canalRef.current = null
       supabase.removeChannel(canal)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sala.roomId])
+
+  useEffect(() => {
+    canalRef.current?.track({ nome: jogador.nome, cor: jogador.cor })
+  }, [jogador.nome, jogador.cor])
+
+  async function resetarHistorico() {
+    const confirmado = window.confirm('Apagar todo o histórico desta sala para todos os jogadores?')
+    if (!confirmado) return
+    const { error } = await supabase.from('rolls').delete().eq('room_id', sala.roomId)
+    if (error) {
+      console.error('Erro ao resetar histórico:', error)
+      return
+    }
+    setHistorico([])
+  }
 
   async function registrarRolagem(resultado) {
     const { error } = await supabase.from('rolls').insert({
@@ -188,9 +228,17 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
             <strong>{sala.codigo}</strong>
           </p>
         </div>
-        <span className="jogador-tag" style={{ borderColor: jogador.cor, color: jogador.cor }}>
-          {jogador.nome}
-        </span>
+        <div className="jogadores-online">
+          {jogadoresOnline.map((j) => (
+            <span
+              key={`${j.nome}-${j.cor}`}
+              className="jogador-tag"
+              style={{ borderColor: j.cor, color: j.cor }}
+            >
+              {j.nome}
+            </span>
+          ))}
+        </div>
         <button
           type="button"
           className="secundario botao-config"
@@ -241,7 +289,12 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
       )}
 
       <div className="historico">
-        <h2>Histórico</h2>
+        <div className="historico-cabecalho">
+          <h2>Histórico</h2>
+          <button type="button" className="secundario" onClick={resetarHistorico}>
+            Resetar
+          </button>
+        </div>
         <ul>
           {historico.map((item) => (
             <li key={item.id} className="historico-item">

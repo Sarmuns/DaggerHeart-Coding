@@ -254,6 +254,13 @@ input {
   border: 1.5px solid;
 }
 
+.jogadores-online {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+
 .dados {
   display: flex;
   gap: 32px;
@@ -400,6 +407,19 @@ input {
 
 .historico h2 {
   text-align: left;
+  margin: 0;
+}
+
+.historico-cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.historico-cabecalho button {
+  padding: 4px 10px;
+  font-size: 13px;
 }
 
 .historico ul {
