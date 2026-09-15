@@ -1,5 +1,6 @@
 import { DiceRoller } from '@gnuton/css-dice-roller'
 import { useEffect, useRef, useState } from 'react'
+import { supabase } from '../lib/supabase'
 import { calcularResultado, textoResultado } from '../utils/dice'
 import ColorSettingsPanel from './ColorSettingsPanel'
 
@@ -16,6 +17,20 @@ function corResultado(vencedor, cores) {
 
 function prefereMenosMovimento() {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+}
+
+function linhaParaHistorico(linha) {
+  const { vencedor } = calcularResultado(linha.dado_hope, linha.dado_fear)
+  return {
+    id: linha.id,
+    jogador: linha.jogador,
+    cor: linha.cor,
+    corHope: linha.cor_hope,
+    corFear: linha.cor_fear,
+    hope: linha.dado_hope,
+    fear: linha.dado_fear,
+    vencedor,
+  }
 }
 
 function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
@@ -64,21 +79,63 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
     rollerFearRef.current?.updateSettings({ baseColor: jogador.corFear })
   }, [jogador.corFear])
 
+  useEffect(() => {
+    let ativo = true
+
+    async function carregarHistorico() {
+      const { data, error } = await supabase
+        .from('rolls')
+        .select('*')
+        .eq('room_id', sala.roomId)
+        .order('criado_em', { ascending: false })
+        .limit(30)
+
+      if (ativo && !error && data) {
+        setHistorico(data.map(linhaParaHistorico))
+      }
+    }
+
+    carregarHistorico()
+
+    const canal = supabase
+      .channel(`room:${sala.roomId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'rolls', filter: `room_id=eq.${sala.roomId}` },
+        (payload) => {
+          setHistorico((atual) => {
+            if (atual.some((item) => item.id === payload.new.id)) return atual
+            return [linhaParaHistorico(payload.new), ...atual]
+          })
+        },
+      )
+      .subscribe()
+
+    return () => {
+      ativo = false
+      supabase.removeChannel(canal)
+    }
+  }, [sala.roomId])
+
+  async function registrarRolagem(resultado) {
+    const { error } = await supabase.from('rolls').insert({
+      room_id: sala.roomId,
+      jogador: jogador.nome,
+      cor: jogador.cor,
+      cor_hope: jogador.corHope,
+      cor_fear: jogador.corFear,
+      dado_hope: resultado.hope,
+      dado_fear: resultado.fear,
+      resultado: textoResultado(resultado),
+    })
+    if (error) console.error('Erro ao registrar rolagem:', error)
+  }
+
   function finalizarRolagem(hope, fear) {
     const resultado = calcularResultado(hope, fear)
     setUltimoResultado(resultado)
     setRolando(false)
-    setHistorico((atual) => [
-      {
-        id: crypto.randomUUID(),
-        jogador: jogador.nome,
-        cor: jogador.cor,
-        corHope: jogador.corHope,
-        corFear: jogador.corFear,
-        ...resultado,
-      },
-      ...atual,
-    ])
+    registrarRolagem(resultado)
   }
 
   async function rolar() {

@@ -12,6 +12,7 @@
   "dependencies": {
     "@gnuton/css-dice-roller": "^0.8.5",
     "@supabase/supabase-js": "^2.116.0",
+    "bcryptjs": "^3.0.3",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   },
