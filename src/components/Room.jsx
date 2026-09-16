@@ -419,14 +419,14 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
           className={`pill${modoRolagem === 'vantagem' ? ' pill--ativa' : ''}`}
           onClick={() => setModoRolagem('vantagem')}
         >
-          {minhaMecanica === MECANICA_D20 ? 'Vantagem (2d20, maior)' : 'Vantagem (+d6)'}
+          Vantagem
         </button>
         <button
           type="button"
           className={`pill${modoRolagem === 'desvantagem' ? ' pill--ativa' : ''}`}
           onClick={() => setModoRolagem('desvantagem')}
         >
-          {minhaMecanica === MECANICA_D20 ? 'Desvantagem (2d20, menor)' : 'Desvantagem (-d6)'}
+          Desvantagem
         </button>
       </div>
 
