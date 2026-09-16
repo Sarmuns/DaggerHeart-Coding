@@ -55,6 +55,16 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
   const [painelAberto, setPainelAberto] = useState(false)
   const [jogadoresOnline, setJogadoresOnline] = useState([])
   const [modoRolagem, setModoRolagem] = useState('normal') // 'normal' | 'vantagem' | 'desvantagem'
+  const [conectado, setConectado] = useState(true)
+  const [avisos, setAvisos] = useState([])
+
+  function adicionarAviso(texto) {
+    const id = crypto.randomUUID()
+    setAvisos((atual) => [...atual, { id, texto }])
+    setTimeout(() => {
+      setAvisos((atual) => atual.filter((a) => a.id !== id))
+    }, 5000)
+  }
 
   useEffect(() => {
     let ativo = true
@@ -118,8 +128,19 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
         }))
         setJogadoresOnline(lista)
       })
+      .on('presence', { event: 'join' }, ({ key, newPresences }) => {
+        if (key === presenceKeyRef.current) return
+        const nome = newPresences[newPresences.length - 1]?.nome
+        if (nome) adicionarAviso(`${nome} entrou na sala`)
+      })
+      .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
+        if (key === presenceKeyRef.current) return
+        const nome = leftPresences[leftPresences.length - 1]?.nome
+        if (nome) adicionarAviso(`${nome} saiu da sala`)
+      })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
+          setConectado(true)
           await canal.track({
             nome: jogador.nome,
             cor: jogador.cor,
@@ -132,6 +153,9 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
             temaHope: jogador.temaHope,
             temaFear: jogador.temaFear,
           })
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          console.warn('Conexão da sala perdida:', status)
+          setConectado(false)
         }
       })
 
@@ -254,12 +278,40 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
         <button
           type="button"
           className="secundario botao-config"
+          onClick={() => window.location.reload()}
+          aria-label="Atualizar sala"
+          title="Recarregar sala"
+        >
+          ⟳
+        </button>
+        <button
+          type="button"
+          className="secundario botao-config"
           onClick={() => setPainelAberto((v) => !v)}
           aria-label="Configurar cores"
         >
           ⚙
         </button>
       </header>
+
+      {!conectado && (
+        <div className="aviso aviso--erro">
+          Conexão com a sala perdida.{' '}
+          <button type="button" onClick={() => window.location.reload()}>
+            Atualizar
+          </button>
+        </div>
+      )}
+
+      {avisos.length > 0 && (
+        <div className="avisos">
+          {avisos.map((a) => (
+            <div key={a.id} className="aviso">
+              {a.texto}
+            </div>
+          ))}
+        </div>
+      )}
 
       {painelAberto && (
         <ColorSettingsPanel
