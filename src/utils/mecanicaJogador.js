@@ -1,14 +1,20 @@
 export const MECANICA_DUALIDADE = 'dualidade'
 export const MECANICA_D20 = 'd20'
 
-// Único lugar que precisa mudar pra migrar alguém entre 2d12 (dualidade)
-// e 1d20 — hoje é fixo por nome, depois vira um toggle na UI.
-const MECANICA_POR_NOME = {
-  Gabriel: MECANICA_D20,
+// Jogadores com a tag de DM ganham o d20 como dado padrão, mas podem
+// trocar pra 2d12 (dualidade) a qualquer momento pelo toggle na sala.
+// Único lugar que precisa mudar pra dar/tirar a tag de DM de alguém.
+const NOMES_DM = ['Gabriel']
+
+export function ehDM(nome) {
+  return NOMES_DM.includes(nome)
 }
 
+// Mecânica padrão de cada jogador (usada antes de entrar na sala, ou como
+// fallback pra quem ainda não fez toggle) — DM começa em d20, o resto
+// sempre em dualidade.
 export function mecanicaDoJogador(nome) {
-  return MECANICA_POR_NOME[nome] ?? MECANICA_DUALIDADE
+  return ehDM(nome) ? MECANICA_D20 : MECANICA_DUALIDADE
 }
 
 // Mapeia os campos de estilo (que vêm do jogador/presence) pro slot

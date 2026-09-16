@@ -10,9 +10,9 @@ import { TEMA_PADRAO } from '../utils/temasDados'
 import ColorSwatchPicker from './ColorSwatchPicker'
 import DiceColorModal from './DiceColorModal'
 
-function ColorSettingsPanel({ jogador, onAtualizarJogador, onFechar, coresOcupadas = [] }) {
+function ColorSettingsPanel({ jogador, mecanica, onAtualizarJogador, onFechar, coresOcupadas = [] }) {
   const [modalAberto, setModalAberto] = useState(null) // 'hope' | 'fear' | null
-  const ehD20 = mecanicaDoJogador(jogador.nome) === MECANICA_D20
+  const ehD20 = (mecanica ?? mecanicaDoJogador(jogador.nome)) === MECANICA_D20
 
   return (
     <div className="config-painel">

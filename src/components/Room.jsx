@@ -3,6 +3,8 @@ import { supabase } from '../lib/supabase'
 import { calcularResultado, calcularResultadoD20, calcularTotal, melhorPar, textoResultado } from '../utils/dice'
 import {
   MECANICA_D20,
+  MECANICA_DUALIDADE,
+  ehDM,
   estiloPrincipal,
   estiloSecundario,
   mecanicaDoJogador,
@@ -63,6 +65,10 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
   const [painelAberto, setPainelAberto] = useState(false)
   const [jogadoresOnline, setJogadoresOnline] = useState([])
   const [modoRolagem, setModoRolagem] = useState('normal') // 'normal' | 'vantagem' | 'desvantagem'
+  // Só quem tem a tag de DM pode alternar isso — pra todo mundo, fica fixo
+  // no padrão (dualidade). O valor escolhido vai no presence pra quem mais
+  // estiver na sala ver o dado certo do DM.
+  const [mecanicaSelecionada, setMecanicaSelecionada] = useState(() => mecanicaDoJogador(jogador.nome))
   const [conectado, setConectado] = useState(true)
   const [avisos, setAvisos] = useState([])
 
@@ -152,6 +158,7 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
           await canal.track({
             nome: jogador.nome,
             cor: jogador.cor,
+            mecanica: mecanicaSelecionada,
             corHope: jogador.corHope,
             corFear: jogador.corFear,
             corTextoHope: jogador.corTextoHope,
@@ -190,6 +197,7 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
       canalRef.current?.track({
         nome: jogador.nome,
         cor: jogador.cor,
+        mecanica: mecanicaSelecionada,
         corHope: jogador.corHope,
         corFear: jogador.corFear,
         corTextoHope: jogador.corTextoHope,
@@ -212,6 +220,7 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
   }, [
     jogador.nome,
     jogador.cor,
+    mecanicaSelecionada,
     jogador.corHope,
     jogador.corFear,
     jogador.corTextoHope,
@@ -285,7 +294,7 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
       payload: { presenceKey: minhaChave, modo: modoRolagem },
     })
 
-    const mecanica = mecanicaDoJogador(jogador.nome)
+    const mecanica = mecanicaSelecionada
     const resultadoBruto = await meuConjunto.rolarPropria(modoRolagem)
     const { modificador } = resultadoBruto
     let { hope, fear } = resultadoBruto
@@ -325,7 +334,7 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
     registrarRolagem(resultado, modificador, mecanica)
   }
 
-  const minhaMecanica = mecanicaDoJogador(jogador.nome)
+  const minhaMecanica = mecanicaSelecionada
 
   return (
     <section className="room">
@@ -383,6 +392,7 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
       {painelAberto && (
         <ColorSettingsPanel
           jogador={jogador}
+          mecanica={minhaMecanica}
           onAtualizarJogador={onAtualizarJogador}
           onFechar={() => setPainelAberto(false)}
           coresOcupadas={jogadoresOnline
@@ -393,7 +403,7 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
 
       <div className="mesa-dados">
         {jogadoresOnline.map((jg) => {
-          const mecanicaJg = mecanicaDoJogador(jg.nome)
+          const mecanicaJg = jg.mecanica ?? mecanicaDoJogador(jg.nome)
           const principal = estiloPrincipal(jg, mecanicaJg)
           const secundaria = estiloSecundario(jg, mecanicaJg)
           return (
@@ -416,6 +426,25 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
           )
         })}
       </div>
+
+      {ehDM(jogador.nome) && (
+        <div className="modo-rolagem">
+          <button
+            type="button"
+            className={`pill${mecanicaSelecionada === MECANICA_D20 ? ' pill--ativa' : ''}`}
+            onClick={() => setMecanicaSelecionada(MECANICA_D20)}
+          >
+            d20
+          </button>
+          <button
+            type="button"
+            className={`pill${mecanicaSelecionada === MECANICA_DUALIDADE ? ' pill--ativa' : ''}`}
+            onClick={() => setMecanicaSelecionada(MECANICA_DUALIDADE)}
+          >
+            2d12
+          </button>
+        </div>
+      )}
 
       <div className="modo-rolagem">
         <button
