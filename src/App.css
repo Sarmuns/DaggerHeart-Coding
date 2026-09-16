@@ -188,13 +188,6 @@ input {
   width: 100%;
 }
 
-.avisos {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  width: 100%;
-}
-
 .aviso {
   width: 100%;
   box-sizing: border-box;

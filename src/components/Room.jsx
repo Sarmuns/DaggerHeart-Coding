@@ -84,13 +84,6 @@ function Room({ sala, jogador, onAtualizarJogador }) {
   const canalRef = useRef(null)
   const presenceKeyRef = useRef(crypto.randomUUID())
   const diceRefsRef = useRef(new Map())
-  // Avisos de entrada/saída são calculados comparando snapshots do
-  // presence 'sync' (debounced), não os eventos 'join'/'leave' direto —
-  // cada track() (ex.: atualizar um marcador) já causa um leave+join
-  // internos pra mesma pessoa, e os eventos não chegam sempre parelhos o
-  // suficiente pra cancelar um o outro de forma confiável.
-  const chavesConhecidasRef = useRef(new Map()) // presenceKey -> nome
-  const syncDebounceRef = useRef(null)
   const [rolando, setRolando] = useState(false)
   const [ultimoResultado, setUltimoResultado] = useState(null)
   // Último resultado de cada jogador (por presenceKey), pra mostrar "4 com
@@ -141,7 +134,6 @@ function Room({ sala, jogador, onAtualizarJogador }) {
   // estiver na sala ver o dado certo do DM.
   const [mecanicaSelecionada, setMecanicaSelecionada] = useState(() => mecanicaDoJogador(jogador.nome))
   const [conectado, setConectado] = useState(true)
-  const [avisos, setAvisos] = useState([])
   // Marcadores de personagem (PV, Esperança, Estresse, etc.) — carregados do
   // banco por nome, editáveis livremente e sincronizados via presence, igual
   // ao resto do perfil do jogador.
@@ -194,14 +186,6 @@ function Room({ sala, jogador, onAtualizarJogador }) {
     setTimeout(() => {
       setCooldownsAjuste((atual) => ({ ...atual, [campo]: 0 }))
     }, COOLDOWN_AJUSTE_MS)
-  }
-
-  function adicionarAviso(texto) {
-    const id = crypto.randomUUID()
-    setAvisos((atual) => [...atual, { id, texto }])
-    setTimeout(() => {
-      setAvisos((atual) => atual.filter((a) => a.id !== id))
-    }, 5000)
   }
 
   useEffect(() => {
@@ -272,25 +256,6 @@ function Room({ sala, jogador, onAtualizarJogador }) {
           ...metas[metas.length - 1],
         }))
         setJogadoresOnline(lista)
-
-        // Avisos de entrada/saída: compara com o snapshot anterior, mas só
-        // depois de tudo ficar quieto por um instante — um simples
-        // atualizar-marcador já dispara um sync de "saiu" seguido de outro
-        // de "entrou" pra mesma pessoa, e sem esse debounce isso vira aviso
-        // falso toda vez.
-        clearTimeout(syncDebounceRef.current)
-        syncDebounceRef.current = setTimeout(() => {
-          const atuais = new Map(
-            lista.filter((jg) => jg.presenceKey !== presenceKeyRef.current && jg.nome).map((jg) => [jg.presenceKey, jg.nome]),
-          )
-          for (const [chave, nome] of atuais) {
-            if (!chavesConhecidasRef.current.has(chave)) adicionarAviso(`${nome} entrou na sala`)
-          }
-          for (const [chave, nome] of chavesConhecidasRef.current) {
-            if (!atuais.has(chave)) adicionarAviso(`${nome} saiu da sala`)
-          }
-          chavesConhecidasRef.current = atuais
-        }, 800)
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
@@ -329,7 +294,6 @@ function Room({ sala, jogador, onAtualizarJogador }) {
       ativo = false
       canalRef.current = null
       supabase.removeChannel(canal)
-      clearTimeout(syncDebounceRef.current)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sala.roomId])
@@ -533,16 +497,6 @@ function Room({ sala, jogador, onAtualizarJogador }) {
           <button type="button" onClick={() => window.location.reload()}>
             Atualizar
           </button>
-        </div>
-      )}
-
-      {avisos.length > 0 && (
-        <div className="avisos">
-          {avisos.map((a) => (
-            <div key={a.id} className="aviso">
-              {a.texto}
-            </div>
-          ))}
         </div>
       )}
 
