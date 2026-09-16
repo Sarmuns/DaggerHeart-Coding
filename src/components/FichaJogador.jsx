@@ -101,26 +101,7 @@ function LinhaTrack({ label, valor, max, editavel, podeAjustar, onAjustar }) {
   return (
     <div className="track-linha">
       {editavel && (
-        <button
-          type="button"
-          className="track-botao track-botao--somar"
-          disabled={!podeAjustar}
-          title={podeAjustar ? `Adicionar ${label.toLowerCase()}` : 'Espera o cooldown acabar'}
-          onClick={() => onAjustar(quantidade)}
-        >
-          +
-        </button>
-      )}
-      <TrackPips label={label} valor={valor} max={max} />
-      {editavel && (
         <div className="track-remover">
-          <input
-            type="number"
-            min={1}
-            max={limite}
-            value={quantidade}
-            onChange={(e) => setQuantidade(Math.min(Math.max(1, paraNumero(e.target.value)), limite))}
-          />
           <button
             type="button"
             className="track-botao"
@@ -130,7 +111,26 @@ function LinhaTrack({ label, valor, max, editavel, podeAjustar, onAjustar }) {
           >
             −
           </button>
+          <input
+            type="number"
+            min={1}
+            max={limite}
+            value={quantidade}
+            onChange={(e) => setQuantidade(Math.min(Math.max(1, paraNumero(e.target.value)), limite))}
+          />
         </div>
+      )}
+      <TrackPips label={label} valor={valor} max={max} />
+      {editavel && (
+        <button
+          type="button"
+          className="track-botao track-botao--somar"
+          disabled={!podeAjustar}
+          title={podeAjustar ? `Adicionar ${label.toLowerCase()}` : 'Espera o cooldown acabar'}
+          onClick={() => onAjustar(quantidade)}
+        >
+          +
+        </button>
       )}
     </div>
   )

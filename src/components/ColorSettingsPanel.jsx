@@ -9,7 +9,7 @@ import { MECANICA_D20, mecanicaDoJogador } from '../utils/mecanicaJogador'
 import { TEMA_PADRAO } from '../utils/temasDados'
 import ColorSwatchPicker from './ColorSwatchPicker'
 import DiceColorModal from './DiceColorModal'
-import { FichaCompleta } from './FichaJogador'
+import MarcadoresModal from './MarcadoresModal'
 
 function ColorSettingsPanel({
   jogador,
@@ -20,13 +20,8 @@ function ColorSettingsPanel({
   onFechar,
   coresOcupadas = [],
 }) {
-  const [modalAberto, setModalAberto] = useState(null) // 'hope' | 'fear' | null
-  const [rascunhoMarcadores, setRascunhoMarcadores] = useState(marcadores)
+  const [modalAberto, setModalAberto] = useState(null) // 'hope' | 'fear' | 'marcadores' | null
   const ehD20 = (mecanica ?? mecanicaDoJogador(jogador.nome)) === MECANICA_D20
-
-  function alterarRascunho(campo, valor) {
-    setRascunhoMarcadores((atual) => ({ ...atual, [campo]: valor }))
-  }
 
   return (
     <div className="config-painel">
@@ -56,6 +51,10 @@ function ColorSettingsPanel({
           {ehD20 ? 'Dado d20 extra' : 'Dado de Medo'}
         </button>
       </div>
+
+      <button type="button" onClick={() => setModalAberto('marcadores')}>
+        Marcadores do Personagem
+      </button>
 
       {modalAberto === 'hope' &&
         (ehD20 ? (
@@ -135,22 +134,14 @@ function ColorSettingsPanel({
           />
         ))}
 
-      <div className="config-painel-secao">
-        <h3>Marcadores do personagem</h3>
-        <FichaCompleta
+      {modalAberto === 'marcadores' && (
+        <MarcadoresModal
           nome={jogador.nome}
-          marcadores={rascunhoMarcadores}
-          editavel
-          onAlterarCampo={alterarRascunho}
+          marcadores={marcadores}
+          onAplicar={onSalvarMarcadores}
+          onFechar={() => setModalAberto(null)}
         />
-        <button
-          type="button"
-          className="botao-salvar-status"
-          onClick={() => onSalvarMarcadores(rascunhoMarcadores)}
-        >
-          Salvar marcadores
-        </button>
-      </div>
+      )}
     </div>
   )
 }
