@@ -143,7 +143,14 @@ export function PipsJogador({ nome, marcadores, editavel, podeAjustar, onAjustar
   if (ehDM(nome)) {
     return (
       <div className="pips-jogador">
-        <TrackPips label="Medo" valor={marcadores.fear} max={marcadores.fearMax} />
+        <LinhaTrack
+          label="Medo"
+          valor={marcadores.fear}
+          max={marcadores.fearMax}
+          editavel={editavel}
+          podeAjustar={podeAjustar?.('fear')}
+          onAjustar={(delta) => onAjustar('fear', delta)}
+        />
       </div>
     )
   }
