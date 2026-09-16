@@ -84,10 +84,13 @@ function Room({ sala, jogador, onAtualizarJogador }) {
   const canalRef = useRef(null)
   const presenceKeyRef = useRef(crypto.randomUUID())
   const diceRefsRef = useRef(new Map())
-  // Cada track() de presence (ex.: atualizar um marcador) gera um leave+join
-  // internos pra mesma pessoa — sem isso, todo update vira um falso aviso de
-  // "saiu/entrou" pros outros jogadores.
-  const saidasPendentesRef = useRef(new Map())
+  // Avisos de entrada/saída são calculados comparando snapshots do
+  // presence 'sync' (debounced), não os eventos 'join'/'leave' direto —
+  // cada track() (ex.: atualizar um marcador) já causa um leave+join
+  // internos pra mesma pessoa, e os eventos não chegam sempre parelhos o
+  // suficiente pra cancelar um o outro de forma confiável.
+  const chavesConhecidasRef = useRef(new Map()) // presenceKey -> nome
+  const syncDebounceRef = useRef(null)
   const [rolando, setRolando] = useState(false)
   const [ultimoResultado, setUltimoResultado] = useState(null)
   // Último resultado de cada jogador (por presenceKey), pra mostrar "4 com
@@ -269,31 +272,25 @@ function Room({ sala, jogador, onAtualizarJogador }) {
           ...metas[metas.length - 1],
         }))
         setJogadoresOnline(lista)
-      })
-      .on('presence', { event: 'join' }, ({ key, newPresences }) => {
-        if (key === presenceKeyRef.current) return
-        const nome = newPresences[newPresences.length - 1]?.nome
-        const saidaPendente = saidasPendentesRef.current.get(key)
-        if (saidaPendente) {
-          // Era só o leave+join interno de um track() (ex.: atualizou um
-          // marcador) — cancela o aviso de saída, não é uma saída de verdade.
-          clearTimeout(saidaPendente.timer)
-          saidasPendentesRef.current.delete(key)
-          return
-        }
-        if (nome) adicionarAviso(`${nome} entrou na sala`)
-      })
-      .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-        if (key === presenceKeyRef.current) return
-        const nome = leftPresences[leftPresences.length - 1]?.nome
-        if (!nome) return
-        // Espera um instante antes de avisar — se for só um re-track (join
-        // logo em seguida), o handler de 'join' acima cancela isso.
-        const timer = setTimeout(() => {
-          saidasPendentesRef.current.delete(key)
-          adicionarAviso(`${nome} saiu da sala`)
-        }, 700)
-        saidasPendentesRef.current.set(key, { timer })
+
+        // Avisos de entrada/saída: compara com o snapshot anterior, mas só
+        // depois de tudo ficar quieto por um instante — um simples
+        // atualizar-marcador já dispara um sync de "saiu" seguido de outro
+        // de "entrou" pra mesma pessoa, e sem esse debounce isso vira aviso
+        // falso toda vez.
+        clearTimeout(syncDebounceRef.current)
+        syncDebounceRef.current = setTimeout(() => {
+          const atuais = new Map(
+            lista.filter((jg) => jg.presenceKey !== presenceKeyRef.current && jg.nome).map((jg) => [jg.presenceKey, jg.nome]),
+          )
+          for (const [chave, nome] of atuais) {
+            if (!chavesConhecidasRef.current.has(chave)) adicionarAviso(`${nome} entrou na sala`)
+          }
+          for (const [chave, nome] of chavesConhecidasRef.current) {
+            if (!atuais.has(chave)) adicionarAviso(`${nome} saiu da sala`)
+          }
+          chavesConhecidasRef.current = atuais
+        }, 800)
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
@@ -332,8 +329,7 @@ function Room({ sala, jogador, onAtualizarJogador }) {
       ativo = false
       canalRef.current = null
       supabase.removeChannel(canal)
-      saidasPendentesRef.current.forEach(({ timer }) => clearTimeout(timer))
-      saidasPendentesRef.current.clear()
+      clearTimeout(syncDebounceRef.current)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sala.roomId])
