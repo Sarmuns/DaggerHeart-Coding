@@ -21,6 +21,7 @@ import PlayerDiceSet from './PlayerDiceSet'
 
 const COR_CRITICO = '#aa3bff'
 const FUSO_BRASIL = 'America/Sao_Paulo'
+const DURACAO_RESULTADO_MS = 5000
 
 // "cores" aqui sempre chega já resolvida (corHope/corFear = principal/
 // secundária da mecânica em uso), então não precisa saber d20 vs dualidade.
@@ -70,7 +71,31 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
   const [ultimoResultado, setUltimoResultado] = useState(null)
   // Último resultado de cada jogador (por presenceKey), pra mostrar "4 com
   // Esperança" etc. na caixa de dados de todo mundo, não só de quem rolou.
+  // Some sozinho depois de alguns segundos — o histórico é que guarda o
+  // registro permanente.
   const [resultadosPorJogador, setResultadosPorJogador] = useState({})
+  const timersResultadoRef = useRef(new Map())
+
+  function definirResultadoDoJogador(presenceKey, resultado) {
+    setResultadosPorJogador((atual) => ({ ...atual, [presenceKey]: resultado }))
+
+    const timerAnterior = timersResultadoRef.current.get(presenceKey)
+    if (timerAnterior) clearTimeout(timerAnterior)
+
+    const timer = setTimeout(() => {
+      setResultadosPorJogador((atual) => {
+        const { [presenceKey]: _descartado, ...resto } = atual
+        return resto
+      })
+      timersResultadoRef.current.delete(presenceKey)
+    }, DURACAO_RESULTADO_MS)
+    timersResultadoRef.current.set(presenceKey, timer)
+  }
+
+  useEffect(() => {
+    const timers = timersResultadoRef.current
+    return () => timers.forEach((timer) => clearTimeout(timer))
+  }, [])
   const [historico, setHistorico] = useState([])
   const [painelAberto, setPainelAberto] = useState(false)
   const [jogadoresOnline, setJogadoresOnline] = useState([])
@@ -135,15 +160,12 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
         diceRefsRef.current.get(payload.presenceKey)?.iniciarGiro(payload.modo)
       })
       .on('broadcast', { event: 'resultado' }, ({ payload }) => {
-        setResultadosPorJogador((atual) => ({
-          ...atual,
-          [payload.presenceKey]: {
-            vencedor: payload.vencedor,
-            hope: payload.hope,
-            fear: payload.fear,
-            modificador: payload.modificador,
-          },
-        }))
+        definirResultadoDoJogador(payload.presenceKey, {
+          vencedor: payload.vencedor,
+          hope: payload.hope,
+          fear: payload.fear,
+          modificador: payload.modificador,
+        })
         if (payload.presenceKey === presenceKeyRef.current) return
         diceRefsRef.current
           .get(payload.presenceKey)
@@ -342,10 +364,12 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
     }
 
     setUltimoResultado({ ...resultado, modificador })
-    setResultadosPorJogador((atual) => ({
-      ...atual,
-      [minhaChave]: { vencedor: resultado.vencedor, hope: resultado.hope, fear: resultado.fear, modificador },
-    }))
+    definirResultadoDoJogador(minhaChave, {
+      vencedor: resultado.vencedor,
+      hope: resultado.hope,
+      fear: resultado.fear,
+      modificador,
+    })
     setRolando(false)
 
     canalRef.current?.send({

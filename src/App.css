@@ -566,6 +566,17 @@ input {
   font-size: 14px;
   font-weight: 600;
   text-align: center;
+  animation: dissipar-resultado 5s ease forwards;
+}
+
+@keyframes dissipar-resultado {
+  0%,
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 .conjunto-dados-resultado--d20 {
