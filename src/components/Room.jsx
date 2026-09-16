@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { calcularResultado, calcularResultadoD20, calcularTotal, ehVencedorD20, textoResultado } from '../utils/dice'
+import {
+  calcularResultado,
+  calcularResultadoD20,
+  calcularTotal,
+  ehVencedorD20,
+  rolarDados,
+  textoResultado,
+} from '../utils/dice'
 import {
   MECANICA_D20,
   MECANICA_DUALIDADE,
@@ -9,7 +16,10 @@ import {
   estiloSecundario,
   mecanicaDoJogador,
 } from '../utils/mecanicaJogador'
+import { MARCADORES_PADRAO, marcadoresDoPresence } from '../utils/marcadoresJogador'
+import { carregarMarcadoresDoJogador, salvarMarcadoresDoJogador } from '../utils/marcadoresJogadorDb'
 import ColorSettingsPanel from './ColorSettingsPanel'
+import FichaJogador from './FichaJogador'
 import PlayerDiceSet from './PlayerDiceSet'
 
 const COR_CRITICO = '#aa3bff'
@@ -124,6 +134,37 @@ function Room({ sala, jogador, onAtualizarJogador }) {
   const [mecanicaSelecionada, setMecanicaSelecionada] = useState(() => mecanicaDoJogador(jogador.nome))
   const [conectado, setConectado] = useState(true)
   const [avisos, setAvisos] = useState([])
+  // Marcadores de personagem (PV, Esperança, Estresse, etc.) — carregados do
+  // banco por nome, editáveis livremente e sincronizados via presence, igual
+  // ao resto do perfil do jogador.
+  const [marcadores, setMarcadores] = useState(MARCADORES_PADRAO)
+  // Só começa a salvar depois que o carregamento inicial terminar — senão o
+  // efeito de salvar dispara com os valores padrão antes do fetch resolver
+  // e sobrescreve o que já estava salvo no banco.
+  const marcadoresCarregadosRef = useRef(false)
+
+  useEffect(() => {
+    let ativo = true
+    marcadoresCarregadosRef.current = false
+    carregarMarcadoresDoJogador(jogador.nome).then((valores) => {
+      if (!ativo) return
+      setMarcadores(valores)
+      marcadoresCarregadosRef.current = true
+    })
+    return () => {
+      ativo = false
+    }
+  }, [jogador.nome])
+
+  useEffect(() => {
+    if (!marcadoresCarregadosRef.current) return
+    const id = setTimeout(() => salvarMarcadoresDoJogador(jogador.nome, marcadores), 400)
+    return () => clearTimeout(id)
+  }, [jogador.nome, marcadores])
+
+  function alterarMarcador(campo, valor) {
+    setMarcadores((atual) => ({ ...atual, [campo]: valor }))
+  }
 
   function adicionarAviso(texto) {
     const id = crypto.randomUUID()
@@ -219,6 +260,7 @@ function Room({ sala, jogador, onAtualizarJogador }) {
             nome: jogador.nome,
             cor: jogador.cor,
             mecanica: mecanicaSelecionada,
+            ...marcadores,
             corHope: jogador.corHope,
             corFear: jogador.corFear,
             corTextoHope: jogador.corTextoHope,
@@ -258,6 +300,7 @@ function Room({ sala, jogador, onAtualizarJogador }) {
         nome: jogador.nome,
         cor: jogador.cor,
         mecanica: mecanicaSelecionada,
+        ...marcadores,
         corHope: jogador.corHope,
         corFear: jogador.corFear,
         corTextoHope: jogador.corTextoHope,
@@ -281,6 +324,7 @@ function Room({ sala, jogador, onAtualizarJogador }) {
     jogador.nome,
     jogador.cor,
     mecanicaSelecionada,
+    marcadores,
     jogador.corHope,
     jogador.corFear,
     jogador.corTextoHope,
@@ -356,21 +400,28 @@ function Room({ sala, jogador, onAtualizarJogador }) {
     })
 
     const mecanica = mecanicaSelecionada
-    const resultadoBruto = await meuConjunto.rolarPropria(modoRolagem)
-    const { modificador } = resultadoBruto
-    let { hope, fear } = resultadoBruto
 
-    let resultado
+    let resultadoBruto
     if (mecanica === MECANICA_D20) {
-      resultado = calcularResultadoD20(hope, fear)
+      resultadoBruto = await meuConjunto.rolarPropria(modoRolagem)
+    } else if (jogador.nome === 'Samuel') {
+      // Vantagem do Samuel: decide ANTES de girar se o resultado (que seria
+      // "com Medo") vira "com Esperança" — 20% de chance, trocando qual
+      // dado mostra qual número (o total/soma não muda). Os dados já giram
+      // direto pro valor final: nunca revelam o valor "de verdade" primeiro
+      // pra depois trocar, senão fica visível o "pulo" do número.
+      const { hope: hopeSorteado, fear: fearSorteado } = rolarDados()
+      const trocar = fearSorteado > hopeSorteado && Math.random() < 0.2
+      const hopeAlvo = trocar ? fearSorteado : hopeSorteado
+      const fearAlvo = trocar ? hopeSorteado : fearSorteado
+      resultadoBruto = await meuConjunto.rolarPropriaParaValores(hopeAlvo, fearAlvo, modoRolagem)
     } else {
-      resultado = calcularResultado(hope, fear)
-      // Vantagem do Samuel: os números rolados não mudam, mas se o resultado
-      // seria "com Medo", 20% de chance de virar "com Esperança" mesmo assim.
-      if (jogador.nome === 'Samuel' && resultado.vencedor === 'fear' && Math.random() < 0.2) {
-        resultado = { ...resultado, vencedor: 'hope' }
-      }
+      resultadoBruto = await meuConjunto.rolarPropria(modoRolagem)
     }
+
+    const { modificador } = resultadoBruto
+    const { hope, fear } = resultadoBruto
+    const resultado = mecanica === MECANICA_D20 ? calcularResultadoD20(hope, fear) : calcularResultado(hope, fear)
 
     setUltimoResultado({ ...resultado, modificador })
     definirResultadoDoJogador(minhaChave, {
@@ -464,29 +515,37 @@ function Room({ sala, jogador, onAtualizarJogador }) {
           const principal = estiloPrincipal(jg, mecanicaJg)
           const secundaria = estiloSecundario(jg, mecanicaJg)
           const resultadoJg = resultadosPorJogador[jg.presenceKey]
+          const souEu = jg.presenceKey === presenceKeyRef.current
           return (
-            <PlayerDiceSet
-              key={jg.presenceKey}
-              ref={(node) => registrarRefDados(jg.presenceKey, node)}
-              nome={jg.nome}
-              cor={jg.cor}
-              corPrincipal={principal.cor}
-              corBordaPrincipal={principal.borda}
-              corTextoPrincipal={principal.texto}
-              temaPrincipal={principal.tema}
-              corSecundaria={secundaria.cor}
-              corBordaSecundaria={secundaria.borda}
-              corTextoSecundaria={secundaria.texto}
-              temaSecundaria={secundaria.tema}
-              mecanica={mecanicaJg}
-              destaque={jg.presenceKey === presenceKeyRef.current}
-              resultadoTexto={resultadoJg ? textoResultado(resultadoJg) : null}
-              resultadoCor={
-                resultadoJg
-                  ? corResultado(resultadoJg.vencedor, { corHope: principal.cor, corFear: secundaria.cor })
-                  : null
-              }
-            />
+            <div key={jg.presenceKey} className="jogador-coluna">
+              <PlayerDiceSet
+                ref={(node) => registrarRefDados(jg.presenceKey, node)}
+                nome={jg.nome}
+                cor={jg.cor}
+                corPrincipal={principal.cor}
+                corBordaPrincipal={principal.borda}
+                corTextoPrincipal={principal.texto}
+                temaPrincipal={principal.tema}
+                corSecundaria={secundaria.cor}
+                corBordaSecundaria={secundaria.borda}
+                corTextoSecundaria={secundaria.texto}
+                temaSecundaria={secundaria.tema}
+                mecanica={mecanicaJg}
+                destaque={souEu}
+                resultadoTexto={resultadoJg ? textoResultado(resultadoJg) : null}
+                resultadoCor={
+                  resultadoJg
+                    ? corResultado(resultadoJg.vencedor, { corHope: principal.cor, corFear: secundaria.cor })
+                    : null
+                }
+              />
+              <FichaJogador
+                nome={jg.nome}
+                marcadores={souEu ? marcadores : marcadoresDoPresence(jg)}
+                editavel={souEu}
+                onAlterarCampo={alterarMarcador}
+              />
+            </div>
           )
         })}
       </div>

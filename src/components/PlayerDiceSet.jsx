@@ -145,6 +145,53 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
     rollerFearRef.current?.updateSettings({ theme: temaSecundaria ?? TEMA_PADRAO })
   }, [temaSecundaria])
 
+  // Gira um dado até um valor já decidido, sem nunca revelar o valor
+  // aleatório "de verdade" primeiro — usado pela vantagem do Samuel, pra
+  // trocar hope/fear ser imperceptível (sem o dado mostrar um número e
+  // "piscar" pra outro logo em seguida).
+  async function girarParaValor(dieRef, alvo) {
+    const die = dieRef.current
+    if (die.settings.animation === 'none') {
+      die.setResult(alvo)
+      return alvo
+    }
+    die.element.style.setProperty('--dice-animation-name', `roll-${die.settings.animation}`)
+    die.element.classList.add('is-rolling')
+    await new Promise((resolver) => setTimeout(resolver, die.settings.speed * 1000))
+    die.element.classList.remove('is-rolling')
+    die.setResult(alvo)
+    return alvo
+  }
+
+  async function animarParParaValores(hopeAlvo, fearAlvo) {
+    const reduzido = prefereMenosMovimento()
+    rollerHopeRef.current.updateSettings({ animation: reduzido ? 'none' : 'float' })
+    rollerFearRef.current.updateSettings({ animation: reduzido ? 'none' : 'float' })
+
+    if (reduzido) {
+      dieHopeRef.current.setResult(hopeAlvo)
+      dieFearRef.current.setResult(fearAlvo)
+      return [hopeAlvo, fearAlvo]
+    }
+
+    setGirandoHope(true)
+    setGirandoFear(true)
+
+    const hopePromise = girarParaValor(dieHopeRef, hopeAlvo).then((valor) => {
+      setGirandoHope(false)
+      return valor
+    })
+
+    await new Promise((resolver) => setTimeout(resolver, STAGGER_FEAR_MS))
+
+    const fearPromise = girarParaValor(dieFearRef, fearAlvo).then((valor) => {
+      setGirandoFear(false)
+      return valor
+    })
+
+    return Promise.all([hopePromise, fearPromise])
+  }
+
   async function animarPar() {
     const reduzido = prefereMenosMovimento()
     rollerHopeRef.current.updateSettings({ animation: reduzido ? 'none' : 'float' })
@@ -187,6 +234,24 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
   async function rolarDualidade(modo) {
     setModificadorVisivel(modo !== 'normal')
     const principalPromise = animarPar()
+    const modificadorPromise = modo !== 'normal' ? animarModificador() : null
+
+    const [hope, fear] = await principalPromise
+    const valorModificador = modificadorPromise ? await modificadorPromise : null
+
+    return {
+      hope,
+      fear,
+      modificador: valorModificador === null ? null : { tipo: modo, valor: valorModificador },
+    }
+  }
+
+  // Igual rolarDualidade, mas os dados já giram direto pro valor final
+  // definido por fora (hope/fear já decididos, incluindo qualquer troca de
+  // vantagem) — nunca mostra um valor "de verdade" pra depois substituir.
+  async function rolarDualidadeParaValores(hopeAlvo, fearAlvo, modo) {
+    setModificadorVisivel(modo !== 'normal')
+    const principalPromise = animarParParaValores(hopeAlvo, fearAlvo)
     const modificadorPromise = modo !== 'normal' ? animarModificador() : null
 
     const [hope, fear] = await principalPromise
@@ -266,6 +331,9 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
   useImperativeHandle(ref, () => ({
     async rolarPropria(modo = 'normal') {
       return ehD20 ? rolarD20(modo) : rolarDualidade(modo)
+    },
+    async rolarPropriaParaValores(hopeAlvo, fearAlvo, modo = 'normal') {
+      return rolarDualidadeParaValores(hopeAlvo, fearAlvo, modo)
     },
     iniciarGiro(modo = 'normal') {
       setModificadorVisivel(modo !== 'normal')
