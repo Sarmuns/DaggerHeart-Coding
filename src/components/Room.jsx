@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { calcularResultado, textoResultado } from '../utils/dice'
+import { calcularResultado, calcularTotal, textoResultado } from '../utils/dice'
 import ColorSettingsPanel from './ColorSettingsPanel'
 import PlayerDiceSet from './PlayerDiceSet'
 
@@ -39,6 +39,9 @@ function linhaParaHistorico(linha) {
     vencedor: linha.vencedor,
     total: linha.total,
     horario: formatarHorario(linha.criado_em),
+    modificador: linha.modificador_tipo
+      ? { tipo: linha.modificador_tipo, valor: linha.modificador_valor }
+      : null,
   }
 }
 
@@ -51,6 +54,7 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
   const [historico, setHistorico] = useState([])
   const [painelAberto, setPainelAberto] = useState(false)
   const [jogadoresOnline, setJogadoresOnline] = useState([])
+  const [modoRolagem, setModoRolagem] = useState('normal') // 'normal' | 'vantagem' | 'desvantagem'
 
   useEffect(() => {
     let ativo = true
@@ -94,11 +98,13 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
       )
       .on('broadcast', { event: 'rolando' }, ({ payload }) => {
         if (payload.presenceKey === presenceKeyRef.current) return
-        diceRefsRef.current.get(payload.presenceKey)?.iniciarGiro()
+        diceRefsRef.current.get(payload.presenceKey)?.iniciarGiro(payload.modo)
       })
       .on('broadcast', { event: 'resultado' }, ({ payload }) => {
         if (payload.presenceKey === presenceKeyRef.current) return
-        diceRefsRef.current.get(payload.presenceKey)?.finalizarGiro(payload.hope, payload.fear)
+        diceRefsRef.current
+          .get(payload.presenceKey)
+          ?.finalizarGiro(payload.hope, payload.fear, payload.modificador)
       })
       .on('presence', { event: 'sync' }, () => {
         const estado = canal.presenceState()
@@ -123,6 +129,8 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
             corTextoFear: jogador.corTextoFear,
             corBordaHope: jogador.corBordaHope,
             corBordaFear: jogador.corBordaFear,
+            temaHope: jogador.temaHope,
+            temaFear: jogador.temaFear,
           })
         }
       })
@@ -148,6 +156,8 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
         corTextoFear: jogador.corTextoFear,
         corBordaHope: jogador.corBordaHope,
         corBordaFear: jogador.corBordaFear,
+        temaHope: jogador.temaHope,
+        temaFear: jogador.temaFear,
       })
     }, 150)
     return () => clearTimeout(id)
@@ -160,6 +170,8 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
     jogador.corTextoFear,
     jogador.corBordaHope,
     jogador.corBordaFear,
+    jogador.temaHope,
+    jogador.temaFear,
   ])
 
   function registrarRefDados(presenceKey, node) {
@@ -178,7 +190,7 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
     setHistorico([])
   }
 
-  async function registrarRolagem(resultado) {
+  async function registrarRolagem(resultado, modificador) {
     const { error } = await supabase.from('rolls').insert({
       room_id: sala.roomId,
       jogador: jogador.nome,
@@ -189,7 +201,9 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
       dado_fear: resultado.fear,
       resultado: textoResultado(resultado),
       vencedor: resultado.vencedor,
-      total: resultado.hope + resultado.fear,
+      total: calcularTotal(resultado.hope, resultado.fear, modificador),
+      modificador_tipo: modificador?.tipo ?? null,
+      modificador_valor: modificador?.valor ?? null,
     })
     if (error) console.error('Erro ao registrar rolagem:', error)
   }
@@ -202,20 +216,24 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
     setRolando(true)
     setUltimoResultado(null)
 
-    canalRef.current?.send({ type: 'broadcast', event: 'rolando', payload: { presenceKey: minhaChave } })
+    canalRef.current?.send({
+      type: 'broadcast',
+      event: 'rolando',
+      payload: { presenceKey: minhaChave, modo: modoRolagem },
+    })
 
-    const { hope, fear } = await meuConjunto.rolarPropria()
+    const { hope, fear, modificador } = await meuConjunto.rolarPropria(modoRolagem)
     const resultado = calcularResultado(hope, fear)
-    setUltimoResultado(resultado)
+    setUltimoResultado({ ...resultado, modificador })
     setRolando(false)
 
     canalRef.current?.send({
       type: 'broadcast',
       event: 'resultado',
-      payload: { presenceKey: minhaChave, hope, fear },
+      payload: { presenceKey: minhaChave, hope, fear, modificador },
     })
 
-    registrarRolagem(resultado)
+    registrarRolagem(resultado, modificador)
   }
 
   return (
@@ -264,9 +282,35 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
             corTextoFear={jg.corTextoFear}
             corBordaHope={jg.corBordaHope}
             corBordaFear={jg.corBordaFear}
+            temaHope={jg.temaHope}
+            temaFear={jg.temaFear}
             destaque={jg.presenceKey === presenceKeyRef.current}
           />
         ))}
+      </div>
+
+      <div className="modo-rolagem">
+        <button
+          type="button"
+          className={`pill${modoRolagem === 'normal' ? ' pill--ativa' : ''}`}
+          onClick={() => setModoRolagem('normal')}
+        >
+          Normal
+        </button>
+        <button
+          type="button"
+          className={`pill${modoRolagem === 'vantagem' ? ' pill--ativa' : ''}`}
+          onClick={() => setModoRolagem('vantagem')}
+        >
+          Vantagem (+d6)
+        </button>
+        <button
+          type="button"
+          className={`pill${modoRolagem === 'desvantagem' ? ' pill--ativa' : ''}`}
+          onClick={() => setModoRolagem('desvantagem')}
+        >
+          Desvantagem (-d6)
+        </button>
       </div>
 
       <button type="button" className="botao-rolar" onClick={rolar} disabled={rolando}>
@@ -295,6 +339,11 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
               </span>
               <span className="historico-dados">
                 {item.hope} / {item.fear}
+                {item.modificador && (
+                  <span className="historico-modificador">
+                    {item.modificador.tipo === 'vantagem' ? '+' : '−'}d6({item.modificador.valor})
+                  </span>
+                )}
               </span>
               <span className="historico-resultado" style={{ color: corResultado(item.vencedor, item) }}>
                 {textoResultado(item)}

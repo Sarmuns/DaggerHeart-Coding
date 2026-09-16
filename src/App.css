@@ -469,6 +469,41 @@ input {
   color: var(--text);
 }
 
+.dado-estagio--modificador {
+  opacity: 1;
+  transition: opacity 0.2s;
+}
+
+.dado-estagio--oculto {
+  display: none;
+}
+
+.dado-palco--pequeno {
+  width: 90px;
+  height: 96px;
+}
+
+.modo-rolagem {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.pill {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.pill--ativa {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .botao-rolar {
   font-size: 18px;
   padding: 12px 32px;
@@ -477,6 +512,33 @@ input {
 .resultado {
   font-size: 20px;
   font-weight: 600;
+}
+
+.historico-modificador {
+  margin-left: 6px;
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.select-tema {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+  font-size: 14px;
+}
+
+.select-tema select {
+  font: inherit;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.dado-preview {
+  margin: 0 auto;
 }
 
 .historico {

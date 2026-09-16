@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { CORES } from '../utils/cores'
 import { carregarPreferenciasJogador, salvarPreferenciasJogador } from '../utils/preferenciasJogador'
+import { TEMA_PADRAO } from '../utils/temasDados'
 import ColorSwatchPicker from './ColorSwatchPicker'
 import DiceColorModal from './DiceColorModal'
 import NomePicklist from './NomePicklist'
@@ -23,6 +24,8 @@ function PlayerSetup({ codigoSala, onConfirmar }) {
   const [corTextoFear, setCorTextoFear] = useState(preferencias?.corTextoFear ?? COR_TEXTO_FEAR_PADRAO)
   const [corBordaHope, setCorBordaHope] = useState(preferencias?.corBordaHope ?? COR_BORDA_HOPE_PADRAO)
   const [corBordaFear, setCorBordaFear] = useState(preferencias?.corBordaFear ?? COR_BORDA_FEAR_PADRAO)
+  const [temaHope, setTemaHope] = useState(preferencias?.temaHope ?? TEMA_PADRAO)
+  const [temaFear, setTemaFear] = useState(preferencias?.temaFear ?? TEMA_PADRAO)
   const [modalAberto, setModalAberto] = useState(null) // 'hope' | 'fear' | null
   const [erro, setErro] = useState('')
 
@@ -32,7 +35,18 @@ function PlayerSetup({ codigoSala, onConfirmar }) {
       setErro('Escolha seu nome.')
       return
     }
-    const jogador = { nome, cor, corHope, corFear, corTextoHope, corTextoFear, corBordaHope, corBordaFear }
+    const jogador = {
+      nome,
+      cor,
+      corHope,
+      corFear,
+      corTextoHope,
+      corTextoFear,
+      corBordaHope,
+      corBordaFear,
+      temaHope,
+      temaFear,
+    }
     salvarPreferenciasJogador(jogador)
     onConfirmar(jogador)
   }
@@ -64,9 +78,11 @@ function PlayerSetup({ codigoSala, onConfirmar }) {
           corFundo={corHope}
           corBorda={corBordaHope}
           corTexto={corTextoHope}
+          tema={temaHope}
           onAlterarFundo={setCorHope}
           onAlterarBorda={setCorBordaHope}
           onAlterarTexto={setCorTextoHope}
+          onAlterarTema={setTemaHope}
           onFechar={() => setModalAberto(null)}
         />
       )}
@@ -77,9 +93,11 @@ function PlayerSetup({ codigoSala, onConfirmar }) {
           corFundo={corFear}
           corBorda={corBordaFear}
           corTexto={corTextoFear}
+          tema={temaFear}
           onAlterarFundo={setCorFear}
           onAlterarBorda={setCorBordaFear}
           onAlterarTexto={setCorTextoFear}
+          onAlterarTema={setTemaFear}
           onFechar={() => setModalAberto(null)}
         />
       )}

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { TEMA_PADRAO } from '../utils/temasDados'
 import ColorSwatchPicker from './ColorSwatchPicker'
 import DiceColorModal from './DiceColorModal'
 import NomePicklist from './NomePicklist'
@@ -42,9 +43,11 @@ function ColorSettingsPanel({ jogador, onAtualizarJogador, onFechar }) {
           corFundo={jogador.corHope}
           corBorda={jogador.corBordaHope}
           corTexto={jogador.corTextoHope}
+          tema={jogador.temaHope ?? TEMA_PADRAO}
           onAlterarFundo={(corHope) => onAtualizarJogador({ corHope })}
           onAlterarBorda={(corBordaHope) => onAtualizarJogador({ corBordaHope })}
           onAlterarTexto={(corTextoHope) => onAtualizarJogador({ corTextoHope })}
+          onAlterarTema={(temaHope) => onAtualizarJogador({ temaHope })}
           onFechar={() => setModalAberto(null)}
         />
       )}
@@ -55,9 +58,11 @@ function ColorSettingsPanel({ jogador, onAtualizarJogador, onFechar }) {
           corFundo={jogador.corFear}
           corBorda={jogador.corBordaFear}
           corTexto={jogador.corTextoFear}
+          tema={jogador.temaFear ?? TEMA_PADRAO}
           onAlterarFundo={(corFear) => onAtualizarJogador({ corFear })}
           onAlterarBorda={(corBordaFear) => onAtualizarJogador({ corBordaFear })}
           onAlterarTexto={(corTextoFear) => onAtualizarJogador({ corTextoFear })}
+          onAlterarTema={(temaFear) => onAtualizarJogador({ temaFear })}
           onFechar={() => setModalAberto(null)}
         />
       )}
