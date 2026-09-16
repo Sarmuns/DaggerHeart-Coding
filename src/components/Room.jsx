@@ -102,9 +102,14 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
       })
       .on('presence', { event: 'sync' }, () => {
         const estado = canal.presenceState()
-        const lista = Object.entries(estado).flatMap(([presenceKey, metas]) =>
-          metas.map((meta) => ({ presenceKey, ...meta })),
-        )
+        // Cada track() gera uma nova "meta" para a mesma chave; enquanto o
+        // servidor não confirma a saída da anterior, presenceState() pode
+        // listar as duas simultaneamente. Ficamos só com a mais recente
+        // pra não duplicar o jogador na tela.
+        const lista = Object.entries(estado).map(([presenceKey, metas]) => ({
+          presenceKey,
+          ...metas[metas.length - 1],
+        }))
         setJogadoresOnline(lista)
       })
       .subscribe(async (status) => {
@@ -133,16 +138,19 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
   }, [sala.roomId])
 
   useEffect(() => {
-    canalRef.current?.track({
-      nome: jogador.nome,
-      cor: jogador.cor,
-      corHope: jogador.corHope,
-      corFear: jogador.corFear,
-      corTextoHope: jogador.corTextoHope,
-      corTextoFear: jogador.corTextoFear,
-      corBordaHope: jogador.corBordaHope,
-      corBordaFear: jogador.corBordaFear,
-    })
+    const id = setTimeout(() => {
+      canalRef.current?.track({
+        nome: jogador.nome,
+        cor: jogador.cor,
+        corHope: jogador.corHope,
+        corFear: jogador.corFear,
+        corTextoHope: jogador.corTextoHope,
+        corTextoFear: jogador.corTextoFear,
+        corBordaHope: jogador.corBordaHope,
+        corBordaFear: jogador.corBordaFear,
+      })
+    }, 150)
+    return () => clearTimeout(id)
   }, [
     jogador.nome,
     jogador.cor,
