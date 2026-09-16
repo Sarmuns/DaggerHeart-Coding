@@ -6,6 +6,7 @@ import { TEMA_PADRAO } from '../utils/temasDados'
 const STAGGER_FEAR_MS = 60
 const VELOCIDADE_ROLAGEM_S = 2
 const ESCALA_DADO = 92
+const ESCALA_DADO_D20 = 106
 const ESCALA_DADO_MODIFICADOR = 60
 const COR_MODIFICADOR_FUNDO = '#5b5b5b'
 const COR_MODIFICADOR_BORDA = '#2a2a2a'
@@ -55,8 +56,9 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
 
   useEffect(() => {
     const tipoDado = ehD20 ? 'd20' : 'd12'
+    const escala = ehD20 ? ESCALA_DADO_D20 : ESCALA_DADO
 
-    const rollerHope = new DiceRoller(palcoHopeRef.current, ESCALA_DADO)
+    const rollerHope = new DiceRoller(palcoHopeRef.current, escala)
     const [dieHope] = rollerHope.addDie(tipoDado)
     rollerHope.updateSettings({
       baseColor: corPrincipal,
@@ -68,7 +70,7 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
     rollerHopeRef.current = rollerHope
     dieHopeRef.current = dieHope
 
-    const rollerFear = new DiceRoller(palcoFearRef.current, ESCALA_DADO)
+    const rollerFear = new DiceRoller(palcoFearRef.current, escala)
     const [dieFear] = rollerFear.addDie(tipoDado)
     rollerFear.updateSettings({
       baseColor: corSecundaria,
