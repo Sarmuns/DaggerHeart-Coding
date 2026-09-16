@@ -4,7 +4,7 @@ import ColorSwatchPicker from './ColorSwatchPicker'
 import DiceColorModal from './DiceColorModal'
 import NomePicklist from './NomePicklist'
 
-function ColorSettingsPanel({ jogador, onAtualizarJogador, onFechar }) {
+function ColorSettingsPanel({ jogador, onAtualizarJogador, onFechar, nomesOcupados = [] }) {
   const [modalAberto, setModalAberto] = useState(null) // 'hope' | 'fear' | null
 
   return (
@@ -20,6 +20,7 @@ function ColorSettingsPanel({ jogador, onAtualizarJogador, onFechar }) {
         label="Seu nome"
         nomeSelecionado={jogador.nome}
         onSelecionar={(nome) => onAtualizarJogador({ nome })}
+        nomesOcupados={nomesOcupados}
       />
 
       <ColorSwatchPicker
