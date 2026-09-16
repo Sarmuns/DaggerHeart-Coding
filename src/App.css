@@ -637,6 +637,38 @@ input {
   font-size: 13px;
 }
 
+.historico-filtros {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.historico-filtro-data {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-muted, #8a8a8a);
+}
+
+.historico-filtro-data input {
+  font: inherit;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.historico-vazio {
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text-muted, #8a8a8a);
+  text-align: center;
+}
+
 .historico ul {
   list-style: none;
   padding: 0;

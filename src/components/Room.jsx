@@ -1,13 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import {
-  calcularResultado,
-  calcularResultadoD20,
-  calcularTotal,
-  ehVencedorD20,
-  melhorPar,
-  textoResultado,
-} from '../utils/dice'
+import { calcularResultado, calcularResultadoD20, calcularTotal, ehVencedorD20, textoResultado } from '../utils/dice'
 import {
   MECANICA_D20,
   MECANICA_DUALIDADE,
@@ -31,11 +24,14 @@ function corResultado(vencedor, cores) {
   return COR_CRITICO
 }
 
-function formatarHorario(isoString) {
+function dataDoRegistro(isoString) {
   // O Postgres grava "timestamp" sem timezone usando o horário UTC da sessão,
   // então a string vem sem "Z" — sem isso o navegador a interpretaria como
   // hora local, dobrando o erro de fuso.
-  const data = new Date(isoString.endsWith('Z') ? isoString : `${isoString}Z`)
+  return new Date(isoString.endsWith('Z') ? isoString : `${isoString}Z`)
+}
+
+function formatarHorario(data) {
   const dataFormatada = data.toLocaleDateString('pt-BR', { timeZone: FUSO_BRASIL })
   const horaFormatada = data.toLocaleTimeString('pt-BR', {
     hour: '2-digit',
@@ -45,7 +41,14 @@ function formatarHorario(isoString) {
   return `${dataFormatada} ${horaFormatada}`
 }
 
+// yyyy-mm-dd no fuso de São Paulo — formato comparável direto com o valor
+// de um <input type="date">, pra filtrar o histórico por dia.
+function dataISOBrasil(data) {
+  return data.toLocaleDateString('sv-SE', { timeZone: FUSO_BRASIL })
+}
+
 function linhaParaHistorico(linha) {
+  const data = dataDoRegistro(linha.criado_em)
   return {
     id: linha.id,
     jogador: linha.jogador,
@@ -56,7 +59,8 @@ function linhaParaHistorico(linha) {
     fear: linha.dado_fear,
     vencedor: linha.vencedor,
     total: linha.total,
-    horario: formatarHorario(linha.criado_em),
+    horario: formatarHorario(data),
+    dataISO: dataISOBrasil(data),
     modificador: linha.modificador_tipo
       ? { tipo: linha.modificador_tipo, valor: linha.modificador_valor }
       : null,
@@ -96,7 +100,18 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
     const timers = timersResultadoRef.current
     return () => timers.forEach((timer) => clearTimeout(timer))
   }, [])
+
+  // Assim que qualquer jogador começa a rolar, some com as mensagens de
+  // resultado de todo mundo — evita ficar lendo um resultado antigo
+  // enquanto uma rolagem nova já está em andamento.
+  function limparResultados() {
+    setResultadosPorJogador({})
+    timersResultadoRef.current.forEach((timer) => clearTimeout(timer))
+    timersResultadoRef.current.clear()
+  }
+
   const [historico, setHistorico] = useState([])
+  const [filtroData, setFiltroData] = useState('')
   const [painelAberto, setPainelAberto] = useState(false)
   const [jogadoresOnline, setJogadoresOnline] = useState([])
   const [modoRolagem, setModoRolagem] = useState('normal') // 'normal' | 'vantagem' | 'desvantagem'
@@ -156,6 +171,7 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
         },
       )
       .on('broadcast', { event: 'rolando' }, ({ payload }) => {
+        limparResultados()
         if (payload.presenceKey === presenceKeyRef.current) return
         diceRefsRef.current.get(payload.presenceKey)?.iniciarGiro(payload.modo)
       })
@@ -328,6 +344,7 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
 
     setRolando(true)
     setUltimoResultado(null)
+    limparResultados()
 
     canalRef.current?.send({
       type: 'broadcast',
@@ -344,23 +361,12 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
     if (mecanica === MECANICA_D20) {
       resultado = calcularResultadoD20(hope, fear)
     } else {
-      if (jogador.nome === 'Samuel') {
-        // "Vantagem dupla": rola um segundo par oculto (sem animação) e fica
-        // com o melhor par completo — nunca mistura hope de um par com fear
-        // do outro, senão a vantagem fica em ambos os dados ao mesmo tempo.
-        const parOculto = {
-          hope: Math.floor(Math.random() * 12) + 1,
-          fear: Math.floor(Math.random() * 12) + 1,
-        }
-        const melhor = melhorPar({ hope, fear }, parOculto)
-        if (melhor.hope !== hope || melhor.fear !== fear) {
-          meuConjunto.definirHope(melhor.hope)
-          meuConjunto.definirFear(melhor.fear)
-          hope = melhor.hope
-          fear = melhor.fear
-        }
-      }
       resultado = calcularResultado(hope, fear)
+      // Vantagem do Samuel: os números rolados não mudam, mas se o resultado
+      // seria "com Medo", 20% de chance de virar "com Esperança" mesmo assim.
+      if (jogador.nome === 'Samuel' && resultado.vencedor === 'fear' && Math.random() < 0.2) {
+        resultado = { ...resultado, vencedor: 'hope' }
+      }
     }
 
     setUltimoResultado({ ...resultado, modificador })
@@ -388,6 +394,7 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
   }
 
   const minhaMecanica = mecanicaSelecionada
+  const historicoFiltrado = filtroData ? historico.filter((item) => item.dataISO === filtroData) : historico
 
   return (
     <section className="room">
@@ -555,8 +562,22 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
             Resetar
           </button>
         </div>
+
+        <div className="historico-filtros">
+          <label className="historico-filtro-data">
+            Filtrar por data
+            <input type="date" value={filtroData} onChange={(e) => setFiltroData(e.target.value)} />
+          </label>
+          {filtroData && (
+            <button type="button" className="secundario" onClick={() => setFiltroData('')}>
+              Limpar filtro
+            </button>
+          )}
+        </div>
+
         <ul>
-          {historico.map((item) => (
+          {historicoFiltrado.length === 0 && <li className="historico-vazio">Nenhuma rolagem nesse dia.</li>}
+          {historicoFiltrado.map((item) => (
             <li key={item.id} className="historico-item">
               <span className="historico-horario">{item.horario}</span>
               <span className="historico-jogador" style={{ color: item.cor }}>
