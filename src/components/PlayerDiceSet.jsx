@@ -10,7 +10,7 @@ function prefereMenosMovimento() {
 }
 
 const PlayerDiceSet = forwardRef(function PlayerDiceSet(
-  { nome, cor, corHope, corFear, corTextoHope, corTextoFear, destaque },
+  { nome, cor, corHope, corFear, corTextoHope, corTextoFear, corBordaHope, corBordaFear, destaque },
   ref,
 ) {
   const palcoHopeRef = useRef(null)
@@ -26,13 +26,23 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
   useEffect(() => {
     const rollerHope = new DiceRoller(palcoHopeRef.current, ESCALA_DADO)
     const [dieHope] = rollerHope.addDie('d12')
-    rollerHope.updateSettings({ baseColor: corHope, textColor: corTextoHope, speed: VELOCIDADE_ROLAGEM_S })
+    rollerHope.updateSettings({
+      baseColor: corHope,
+      textColor: corTextoHope,
+      secondaryColor: corBordaHope,
+      speed: VELOCIDADE_ROLAGEM_S,
+    })
     rollerHopeRef.current = rollerHope
     dieHopeRef.current = dieHope
 
     const rollerFear = new DiceRoller(palcoFearRef.current, ESCALA_DADO)
     const [dieFear] = rollerFear.addDie('d12')
-    rollerFear.updateSettings({ baseColor: corFear, textColor: corTextoFear, speed: VELOCIDADE_ROLAGEM_S })
+    rollerFear.updateSettings({
+      baseColor: corFear,
+      textColor: corTextoFear,
+      secondaryColor: corBordaFear,
+      speed: VELOCIDADE_ROLAGEM_S,
+    })
     rollerFearRef.current = rollerFear
     dieFearRef.current = dieFear
 
@@ -62,6 +72,14 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
   useEffect(() => {
     rollerFearRef.current?.updateSettings({ textColor: corTextoFear })
   }, [corTextoFear])
+
+  useEffect(() => {
+    rollerHopeRef.current?.updateSettings({ secondaryColor: corBordaHope })
+  }, [corBordaHope])
+
+  useEffect(() => {
+    rollerFearRef.current?.updateSettings({ secondaryColor: corBordaFear })
+  }, [corBordaFear])
 
   async function animar() {
     const reduzido = prefereMenosMovimento()

@@ -1,8 +1,11 @@
-import ColorInput from './ColorInput'
+import { useState } from 'react'
 import ColorSwatchPicker from './ColorSwatchPicker'
+import DiceColorModal from './DiceColorModal'
 import NomePicklist from './NomePicklist'
 
 function ColorSettingsPanel({ jogador, onAtualizarJogador, onFechar }) {
+  const [modalAberto, setModalAberto] = useState(null) // 'hope' | 'fear' | null
+
   return (
     <div className="config-painel">
       <div className="config-painel-header">
@@ -24,26 +27,40 @@ function ColorSettingsPanel({ jogador, onAtualizarJogador, onFechar }) {
         onSelecionar={(cor) => onAtualizarJogador({ cor })}
       />
 
-      <ColorInput
-        label="Cor do dado de Esperança"
-        value={jogador.corHope}
-        onChange={(corHope) => onAtualizarJogador({ corHope })}
-      />
-      <ColorInput
-        label="Cor dos números (Esperança)"
-        value={jogador.corTextoHope}
-        onChange={(corTextoHope) => onAtualizarJogador({ corTextoHope })}
-      />
-      <ColorInput
-        label="Cor do dado de Medo"
-        value={jogador.corFear}
-        onChange={(corFear) => onAtualizarJogador({ corFear })}
-      />
-      <ColorInput
-        label="Cor dos números (Medo)"
-        value={jogador.corTextoFear}
-        onChange={(corTextoFear) => onAtualizarJogador({ corTextoFear })}
-      />
+      <div className="home-botoes">
+        <button type="button" onClick={() => setModalAberto('hope')}>
+          Dado de Esperança
+        </button>
+        <button type="button" onClick={() => setModalAberto('fear')}>
+          Dado de Medo
+        </button>
+      </div>
+
+      {modalAberto === 'hope' && (
+        <DiceColorModal
+          titulo="Dado de Esperança"
+          corFundo={jogador.corHope}
+          corBorda={jogador.corBordaHope}
+          corTexto={jogador.corTextoHope}
+          onAlterarFundo={(corHope) => onAtualizarJogador({ corHope })}
+          onAlterarBorda={(corBordaHope) => onAtualizarJogador({ corBordaHope })}
+          onAlterarTexto={(corTextoHope) => onAtualizarJogador({ corTextoHope })}
+          onFechar={() => setModalAberto(null)}
+        />
+      )}
+
+      {modalAberto === 'fear' && (
+        <DiceColorModal
+          titulo="Dado de Medo"
+          corFundo={jogador.corFear}
+          corBorda={jogador.corBordaFear}
+          corTexto={jogador.corTextoFear}
+          onAlterarFundo={(corFear) => onAtualizarJogador({ corFear })}
+          onAlterarBorda={(corBordaFear) => onAtualizarJogador({ corBordaFear })}
+          onAlterarTexto={(corTextoFear) => onAtualizarJogador({ corTextoFear })}
+          onFechar={() => setModalAberto(null)}
+        />
+      )}
     </div>
   )
 }

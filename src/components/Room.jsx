@@ -14,7 +14,10 @@ function corResultado(vencedor, cores) {
 }
 
 function formatarHorario(isoString) {
-  const data = new Date(isoString)
+  // O Postgres grava "timestamp" sem timezone usando o horário UTC da sessão,
+  // então a string vem sem "Z" — sem isso o navegador a interpretaria como
+  // hora local, dobrando o erro de fuso.
+  const data = new Date(isoString.endsWith('Z') ? isoString : `${isoString}Z`)
   const dataFormatada = data.toLocaleDateString('pt-BR', { timeZone: FUSO_BRASIL })
   const horaFormatada = data.toLocaleTimeString('pt-BR', {
     hour: '2-digit',
@@ -113,6 +116,8 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
             corFear: jogador.corFear,
             corTextoHope: jogador.corTextoHope,
             corTextoFear: jogador.corTextoFear,
+            corBordaHope: jogador.corBordaHope,
+            corBordaFear: jogador.corBordaFear,
           })
         }
       })
@@ -135,8 +140,19 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
       corFear: jogador.corFear,
       corTextoHope: jogador.corTextoHope,
       corTextoFear: jogador.corTextoFear,
+      corBordaHope: jogador.corBordaHope,
+      corBordaFear: jogador.corBordaFear,
     })
-  }, [jogador.nome, jogador.cor, jogador.corHope, jogador.corFear, jogador.corTextoHope, jogador.corTextoFear])
+  }, [
+    jogador.nome,
+    jogador.cor,
+    jogador.corHope,
+    jogador.corFear,
+    jogador.corTextoHope,
+    jogador.corTextoFear,
+    jogador.corBordaHope,
+    jogador.corBordaFear,
+  ])
 
   function registrarRefDados(presenceKey, node) {
     if (node) diceRefsRef.current.set(presenceKey, node)
@@ -238,6 +254,8 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
             corFear={jg.corFear}
             corTextoHope={jg.corTextoHope}
             corTextoFear={jg.corTextoFear}
+            corBordaHope={jg.corBordaHope}
+            corBordaFear={jg.corBordaFear}
             destaque={jg.presenceKey === presenceKeyRef.current}
           />
         ))}
