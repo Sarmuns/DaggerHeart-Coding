@@ -12,4 +12,4 @@ export const TEMAS_DADOS = [
   { valor: 'theme-steampunk-brass', nome: 'Latão Steampunk' },
 ]
 
-export const TEMA_PADRAO = 'theme-glass'
+export const TEMA_PADRAO = 'theme-solid'
