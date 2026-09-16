@@ -1,13 +1,11 @@
-import { DiceRoller } from '@gnuton/css-dice-roller'
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { calcularResultado, textoResultado } from '../utils/dice'
 import ColorSettingsPanel from './ColorSettingsPanel'
+import PlayerDiceSet from './PlayerDiceSet'
 
-const STAGGER_FEAR_MS = 60
-const VELOCIDADE_ROLAGEM_S = 2
-const ESCALA_DADO = 92
 const COR_CRITICO = '#aa3bff'
+const FUSO_BRASIL = 'America/Sao_Paulo'
 
 function corResultado(vencedor, cores) {
   if (vencedor === 'hope') return cores.corHope
@@ -15,14 +13,14 @@ function corResultado(vencedor, cores) {
   return COR_CRITICO
 }
 
-function prefereMenosMovimento() {
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
-}
-
 function formatarHorario(isoString) {
   const data = new Date(isoString)
-  const dataFormatada = data.toLocaleDateString('pt-BR')
-  const horaFormatada = data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  const dataFormatada = data.toLocaleDateString('pt-BR', { timeZone: FUSO_BRASIL })
+  const horaFormatada = data.toLocaleTimeString('pt-BR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: FUSO_BRASIL,
+  })
   return `${dataFormatada} ${horaFormatada}`
 }
 
@@ -42,53 +40,14 @@ function linhaParaHistorico(linha) {
 }
 
 function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
-  const palcoHopeRef = useRef(null)
-  const palcoFearRef = useRef(null)
-  const rollerHopeRef = useRef(null)
-  const rollerFearRef = useRef(null)
-  const dieHopeRef = useRef(null)
-  const dieFearRef = useRef(null)
   const canalRef = useRef(null)
   const presenceKeyRef = useRef(crypto.randomUUID())
-  const [girandoHope, setGirandoHope] = useState(false)
-  const [girandoFear, setGirandoFear] = useState(false)
+  const diceRefsRef = useRef(new Map())
   const [rolando, setRolando] = useState(false)
   const [ultimoResultado, setUltimoResultado] = useState(null)
   const [historico, setHistorico] = useState([])
   const [painelAberto, setPainelAberto] = useState(false)
   const [jogadoresOnline, setJogadoresOnline] = useState([])
-
-  useEffect(() => {
-    const rollerHope = new DiceRoller(palcoHopeRef.current, ESCALA_DADO)
-    const [dieHope] = rollerHope.addDie('d12')
-    rollerHope.updateSettings({ baseColor: jogador.corHope, speed: VELOCIDADE_ROLAGEM_S })
-    rollerHopeRef.current = rollerHope
-    dieHopeRef.current = dieHope
-
-    const rollerFear = new DiceRoller(palcoFearRef.current, ESCALA_DADO)
-    const [dieFear] = rollerFear.addDie('d12')
-    rollerFear.updateSettings({ baseColor: jogador.corFear, speed: VELOCIDADE_ROLAGEM_S })
-    rollerFearRef.current = rollerFear
-    dieFearRef.current = dieFear
-
-    return () => {
-      rollerHope.clear()
-      rollerFear.clear()
-      rollerHopeRef.current = null
-      rollerFearRef.current = null
-      dieHopeRef.current = null
-      dieFearRef.current = null
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  useEffect(() => {
-    rollerHopeRef.current?.updateSettings({ baseColor: jogador.corHope })
-  }, [jogador.corHope])
-
-  useEffect(() => {
-    rollerFearRef.current?.updateSettings({ baseColor: jogador.corFear })
-  }, [jogador.corFear])
 
   useEffect(() => {
     let ativo = true
@@ -130,13 +89,31 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
           setHistorico((atual) => atual.filter((item) => item.id !== payload.old.id))
         },
       )
+      .on('broadcast', { event: 'rolando' }, ({ payload }) => {
+        if (payload.presenceKey === presenceKeyRef.current) return
+        diceRefsRef.current.get(payload.presenceKey)?.iniciarGiro()
+      })
+      .on('broadcast', { event: 'resultado' }, ({ payload }) => {
+        if (payload.presenceKey === presenceKeyRef.current) return
+        diceRefsRef.current.get(payload.presenceKey)?.finalizarGiro(payload.hope, payload.fear)
+      })
       .on('presence', { event: 'sync' }, () => {
         const estado = canal.presenceState()
-        setJogadoresOnline(Object.values(estado).flat())
+        const lista = Object.entries(estado).flatMap(([presenceKey, metas]) =>
+          metas.map((meta) => ({ presenceKey, ...meta })),
+        )
+        setJogadoresOnline(lista)
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
-          await canal.track({ nome: jogador.nome, cor: jogador.cor })
+          await canal.track({
+            nome: jogador.nome,
+            cor: jogador.cor,
+            corHope: jogador.corHope,
+            corFear: jogador.corFear,
+            corTextoHope: jogador.corTextoHope,
+            corTextoFear: jogador.corTextoFear,
+          })
         }
       })
 
@@ -151,8 +128,20 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
   }, [sala.roomId])
 
   useEffect(() => {
-    canalRef.current?.track({ nome: jogador.nome, cor: jogador.cor })
-  }, [jogador.nome, jogador.cor])
+    canalRef.current?.track({
+      nome: jogador.nome,
+      cor: jogador.cor,
+      corHope: jogador.corHope,
+      corFear: jogador.corFear,
+      corTextoHope: jogador.corTextoHope,
+      corTextoFear: jogador.corTextoFear,
+    })
+  }, [jogador.nome, jogador.cor, jogador.corHope, jogador.corFear, jogador.corTextoHope, jogador.corTextoFear])
+
+  function registrarRefDados(presenceKey, node) {
+    if (node) diceRefsRef.current.set(presenceKey, node)
+    else diceRefsRef.current.delete(presenceKey)
+  }
 
   async function resetarHistorico() {
     const confirmado = window.confirm('Apagar todo o histórico desta sala para todos os jogadores?')
@@ -181,46 +170,28 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
     if (error) console.error('Erro ao registrar rolagem:', error)
   }
 
-  function finalizarRolagem(hope, fear) {
-    const resultado = calcularResultado(hope, fear)
-    setUltimoResultado(resultado)
-    setRolando(false)
-    registrarRolagem(resultado)
-  }
-
   async function rolar() {
-    if (rolando || !dieHopeRef.current || !dieFearRef.current) return
+    const minhaChave = presenceKeyRef.current
+    const meuConjunto = diceRefsRef.current.get(minhaChave)
+    if (rolando || !meuConjunto) return
+
     setRolando(true)
     setUltimoResultado(null)
 
-    const reduzido = prefereMenosMovimento()
-    rollerHopeRef.current.updateSettings({ animation: reduzido ? 'none' : 'float' })
-    rollerFearRef.current.updateSettings({ animation: reduzido ? 'none' : 'float' })
+    canalRef.current?.send({ type: 'broadcast', event: 'rolando', payload: { presenceKey: minhaChave } })
 
-    if (reduzido) {
-      const hope = await dieHopeRef.current.roll()
-      const fear = await dieFearRef.current.roll()
-      finalizarRolagem(hope, fear)
-      return
-    }
+    const { hope, fear } = await meuConjunto.rolarPropria()
+    const resultado = calcularResultado(hope, fear)
+    setUltimoResultado(resultado)
+    setRolando(false)
 
-    setGirandoHope(true)
-    setGirandoFear(true)
-
-    const hopePromise = dieHopeRef.current.roll().then((hope) => {
-      setGirandoHope(false)
-      return hope
+    canalRef.current?.send({
+      type: 'broadcast',
+      event: 'resultado',
+      payload: { presenceKey: minhaChave, hope, fear },
     })
 
-    await new Promise((resolver) => setTimeout(resolver, STAGGER_FEAR_MS))
-
-    const fearPromise = dieFearRef.current.roll().then((fear) => {
-      setGirandoFear(false)
-      return fear
-    })
-
-    const [hope, fear] = await Promise.all([hopePromise, fearPromise])
-    finalizarRolagem(hope, fear)
+    registrarRolagem(resultado)
   }
 
   return (
@@ -237,17 +208,6 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
           <p className="sala-subtitulo">
             <strong>{sala.codigo}</strong>
           </p>
-        </div>
-        <div className="jogadores-online">
-          {jogadoresOnline.map((j) => (
-            <span
-              key={`${j.nome}-${j.cor}`}
-              className="jogador-tag"
-              style={{ borderColor: j.cor, color: j.cor }}
-            >
-              {j.nome}
-            </span>
-          ))}
         </div>
         <button
           type="button"
@@ -267,25 +227,20 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
         />
       )}
 
-      <div className="dados">
-        <div className="dado-estagio">
-          <span className="dado-label" style={{ color: jogador.corHope }}>
-            Esperança
-          </span>
-          <div
-            ref={palcoHopeRef}
-            className={`dado-palco${girandoHope ? ' dado-palco--rolando' : ''}`}
+      <div className="mesa-dados">
+        {jogadoresOnline.map((jg) => (
+          <PlayerDiceSet
+            key={jg.presenceKey}
+            ref={(node) => registrarRefDados(jg.presenceKey, node)}
+            nome={jg.nome}
+            cor={jg.cor}
+            corHope={jg.corHope}
+            corFear={jg.corFear}
+            corTextoHope={jg.corTextoHope}
+            corTextoFear={jg.corTextoFear}
+            destaque={jg.presenceKey === presenceKeyRef.current}
           />
-        </div>
-        <div className="dado-estagio">
-          <span className="dado-label" style={{ color: jogador.corFear }}>
-            Medo
-          </span>
-          <div
-            ref={palcoFearRef}
-            className={`dado-palco${girandoFear ? ' dado-palco--rolando' : ''}`}
-          />
-        </div>
+        ))}
       </div>
 
       <button type="button" className="botao-rolar" onClick={rolar} disabled={rolando}>
