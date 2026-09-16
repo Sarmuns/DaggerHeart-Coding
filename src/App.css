@@ -288,6 +288,11 @@ input {
   padding: 4px 10px;
 }
 
+.config-painel-nome {
+  margin: 0;
+  font-size: 14px;
+}
+
 .modal-fundo {
   position: fixed;
   inset: 0;
@@ -324,6 +329,15 @@ input {
 
 .modal-cabecalho button {
   padding: 4px 10px;
+}
+
+.modal-botoes {
+  display: flex;
+  gap: 10px;
+}
+
+.modal-botoes button {
+  flex: 1;
 }
 
 .jogador-tag {

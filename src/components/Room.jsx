@@ -327,9 +327,6 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
           jogador={jogador}
           onAtualizarJogador={onAtualizarJogador}
           onFechar={() => setPainelAberto(false)}
-          nomesOcupados={jogadoresOnline
-            .filter((jg) => jg.presenceKey !== presenceKeyRef.current)
-            .map((jg) => jg.nome)}
         />
       )}
 

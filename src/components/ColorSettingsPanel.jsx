@@ -1,10 +1,10 @@
 import { useState } from 'react'
+import { ESTILO_PADRAO_FEAR, ESTILO_PADRAO_HOPE } from '../utils/estiloPadraoDados'
 import { TEMA_PADRAO } from '../utils/temasDados'
 import ColorSwatchPicker from './ColorSwatchPicker'
 import DiceColorModal from './DiceColorModal'
-import NomePicklist from './NomePicklist'
 
-function ColorSettingsPanel({ jogador, onAtualizarJogador, onFechar, nomesOcupados = [] }) {
+function ColorSettingsPanel({ jogador, onAtualizarJogador, onFechar }) {
   const [modalAberto, setModalAberto] = useState(null) // 'hope' | 'fear' | null
 
   return (
@@ -16,12 +16,9 @@ function ColorSettingsPanel({ jogador, onAtualizarJogador, onFechar, nomesOcupad
         </button>
       </div>
 
-      <NomePicklist
-        label="Seu nome"
-        nomeSelecionado={jogador.nome}
-        onSelecionar={(nome) => onAtualizarJogador({ nome })}
-        nomesOcupados={nomesOcupados}
-      />
+      <p className="config-painel-nome">
+        Jogando como <strong>{jogador.nome}</strong>
+      </p>
 
       <ColorSwatchPicker
         label="Sua cor"
@@ -45,10 +42,15 @@ function ColorSettingsPanel({ jogador, onAtualizarJogador, onFechar, nomesOcupad
           corBorda={jogador.corBordaHope}
           corTexto={jogador.corTextoHope}
           tema={jogador.temaHope ?? TEMA_PADRAO}
-          onAlterarFundo={(corHope) => onAtualizarJogador({ corHope })}
-          onAlterarBorda={(corBordaHope) => onAtualizarJogador({ corBordaHope })}
-          onAlterarTexto={(corTextoHope) => onAtualizarJogador({ corTextoHope })}
-          onAlterarTema={(temaHope) => onAtualizarJogador({ temaHope })}
+          padrao={ESTILO_PADRAO_HOPE}
+          onAplicar={({ corFundo, corBorda, corTexto, tema }) =>
+            onAtualizarJogador({
+              corHope: corFundo,
+              corBordaHope: corBorda,
+              corTextoHope: corTexto,
+              temaHope: tema,
+            })
+          }
           onFechar={() => setModalAberto(null)}
         />
       )}
@@ -60,10 +62,15 @@ function ColorSettingsPanel({ jogador, onAtualizarJogador, onFechar, nomesOcupad
           corBorda={jogador.corBordaFear}
           corTexto={jogador.corTextoFear}
           tema={jogador.temaFear ?? TEMA_PADRAO}
-          onAlterarFundo={(corFear) => onAtualizarJogador({ corFear })}
-          onAlterarBorda={(corBordaFear) => onAtualizarJogador({ corBordaFear })}
-          onAlterarTexto={(corTextoFear) => onAtualizarJogador({ corTextoFear })}
-          onAlterarTema={(temaFear) => onAtualizarJogador({ temaFear })}
+          padrao={ESTILO_PADRAO_FEAR}
+          onAplicar={({ corFundo, corBorda, corTexto, tema }) =>
+            onAtualizarJogador({
+              corFear: corFundo,
+              corBordaFear: corBorda,
+              corTextoFear: corTexto,
+              temaFear: tema,
+            })
+          }
           onFechar={() => setModalAberto(null)}
         />
       )}
