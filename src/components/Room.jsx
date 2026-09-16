@@ -15,6 +15,9 @@ import PlayerDiceSet from './PlayerDiceSet'
 const COR_CRITICO = '#aa3bff'
 const FUSO_BRASIL = 'America/Sao_Paulo'
 const DURACAO_RESULTADO_MS = 5000
+// Filtro de histórico por data já implementado, só escondido do front por
+// enquanto — trocar pra true reativa a UI sem precisar reescrever nada.
+const MOSTRAR_FILTRO_DATA = false
 
 // "cores" aqui sempre chega já resolvida (corHope/corFear = principal/
 // secundária da mecânica em uso), então não precisa saber d20 vs dualidade.
@@ -557,20 +560,24 @@ function Room({ sala, jogador, onAtualizarJogador }) {
           </button>
         </div>
 
-        <div className="historico-filtros">
-          <label className="historico-filtro-data">
-            Filtrar por data
-            <input type="date" value={filtroData} onChange={(e) => setFiltroData(e.target.value)} />
-          </label>
-          {filtroData && (
-            <button type="button" className="secundario" onClick={() => setFiltroData('')}>
-              Limpar filtro
-            </button>
-          )}
-        </div>
+        {MOSTRAR_FILTRO_DATA && (
+          <div className="historico-filtros">
+            <label className="historico-filtro-data">
+              Filtrar por data
+              <input type="date" value={filtroData} onChange={(e) => setFiltroData(e.target.value)} />
+            </label>
+            {filtroData && (
+              <button type="button" className="secundario" onClick={() => setFiltroData('')}>
+                Limpar filtro
+              </button>
+            )}
+          </div>
+        )}
 
         <ul>
-          {historicoFiltrado.length === 0 && <li className="historico-vazio">Nenhuma rolagem nesse dia.</li>}
+          {filtroData && historicoFiltrado.length === 0 && (
+            <li className="historico-vazio">Nenhuma rolagem nesse dia.</li>
+          )}
           {historicoFiltrado.map((item) => (
             <li key={item.id} className="historico-item">
               <span className="historico-horario">{item.horario}</span>
