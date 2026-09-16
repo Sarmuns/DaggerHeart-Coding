@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { calcularResultado, calcularResultadoD20, calcularTotal, melhorPar, textoResultado } from '../utils/dice'
+import {
+  calcularResultado,
+  calcularResultadoD20,
+  calcularTotal,
+  ehVencedorD20,
+  melhorPar,
+  textoResultado,
+} from '../utils/dice'
 import {
   MECANICA_D20,
   MECANICA_DUALIDADE,
@@ -61,6 +68,9 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
   const diceRefsRef = useRef(new Map())
   const [rolando, setRolando] = useState(false)
   const [ultimoResultado, setUltimoResultado] = useState(null)
+  // Último resultado de cada jogador (por presenceKey), pra mostrar "4 com
+  // Esperança" etc. na caixa de dados de todo mundo, não só de quem rolou.
+  const [resultadosPorJogador, setResultadosPorJogador] = useState({})
   const [historico, setHistorico] = useState([])
   const [painelAberto, setPainelAberto] = useState(false)
   const [jogadoresOnline, setJogadoresOnline] = useState([])
@@ -125,6 +135,15 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
         diceRefsRef.current.get(payload.presenceKey)?.iniciarGiro(payload.modo)
       })
       .on('broadcast', { event: 'resultado' }, ({ payload }) => {
+        setResultadosPorJogador((atual) => ({
+          ...atual,
+          [payload.presenceKey]: {
+            vencedor: payload.vencedor,
+            hope: payload.hope,
+            fear: payload.fear,
+            modificador: payload.modificador,
+          },
+        }))
         if (payload.presenceKey === presenceKeyRef.current) return
         diceRefsRef.current
           .get(payload.presenceKey)
@@ -323,12 +342,22 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
     }
 
     setUltimoResultado({ ...resultado, modificador })
+    setResultadosPorJogador((atual) => ({
+      ...atual,
+      [minhaChave]: { vencedor: resultado.vencedor, hope: resultado.hope, fear: resultado.fear, modificador },
+    }))
     setRolando(false)
 
     canalRef.current?.send({
       type: 'broadcast',
       event: 'resultado',
-      payload: { presenceKey: minhaChave, hope: resultado.hope, fear: resultado.fear, modificador },
+      payload: {
+        presenceKey: minhaChave,
+        vencedor: resultado.vencedor,
+        hope: resultado.hope,
+        fear: resultado.fear,
+        modificador,
+      },
     })
 
     registrarRolagem(resultado, modificador, mecanica)
@@ -406,6 +435,7 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
           const mecanicaJg = jg.mecanica ?? mecanicaDoJogador(jg.nome)
           const principal = estiloPrincipal(jg, mecanicaJg)
           const secundaria = estiloSecundario(jg, mecanicaJg)
+          const resultadoJg = resultadosPorJogador[jg.presenceKey]
           return (
             <PlayerDiceSet
               key={jg.presenceKey}
@@ -422,6 +452,12 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
               temaSecundaria={secundaria.tema}
               mecanica={mecanicaJg}
               destaque={jg.presenceKey === presenceKeyRef.current}
+              resultadoTexto={resultadoJg ? textoResultado(resultadoJg) : null}
+              resultadoCor={
+                resultadoJg
+                  ? corResultado(resultadoJg.vencedor, { corHope: principal.cor, corFear: secundaria.cor })
+                  : null
+              }
             />
           )
         })}
@@ -476,7 +512,7 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
 
       {ultimoResultado && (
         <p
-          className="resultado"
+          className={`resultado${ehVencedorD20(ultimoResultado.vencedor) ? ' resultado--d20' : ''}`}
           style={{
             color: corResultado(ultimoResultado.vencedor, {
               corHope: estiloPrincipal(jogador, minhaMecanica).cor,
@@ -514,7 +550,10 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
                   </span>
                 )}
               </span>
-              <span className="historico-resultado" style={{ color: corResultado(item.vencedor, item) }}>
+              <span
+                className={`historico-resultado${ehVencedorD20(item.vencedor) ? ' historico-resultado--d20' : ''}`}
+                style={{ color: corResultado(item.vencedor, item) }}
+              >
                 {textoResultado(item)}
               </span>
             </li>

@@ -556,6 +556,28 @@ input {
   font-weight: 600;
 }
 
+.resultado--d20 {
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.conjunto-dados-resultado {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.conjunto-dados-resultado--d20 {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.historico-resultado--d20 {
+  font-size: 16px;
+  font-weight: 800;
+}
+
 .historico-modificador {
   margin-left: 6px;
   font-size: 12px;

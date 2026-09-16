@@ -46,8 +46,12 @@ export function calcularResultadoD20(valorMantido, valorDescartado = valorMantid
   }
 }
 
+export function ehVencedorD20(vencedor) {
+  return vencedor === 'd20' || vencedor === 'd20-critico'
+}
+
 export function textoResultado({ vencedor, hope, fear, modificador }) {
-  if (vencedor === 'd20' || vencedor === 'd20-critico') {
+  if (ehVencedorD20(vencedor)) {
     return vencedor === 'd20-critico' ? `Crítico! (${hope})` : `${hope}`
   }
   const total = calcularTotal(hope, fear, modificador)

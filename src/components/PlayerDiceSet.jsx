@@ -34,6 +34,8 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
     temaSecundaria,
     mecanica,
     destaque,
+    resultadoTexto,
+    resultadoCor,
   },
   ref,
 ) {
@@ -344,6 +346,14 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
           </div>
         )}
       </div>
+      {resultadoTexto && (
+        <p
+          className={`conjunto-dados-resultado${ehD20 ? ' conjunto-dados-resultado--d20' : ''}`}
+          style={{ color: resultadoCor }}
+        >
+          {resultadoTexto}
+        </p>
+      )}
     </div>
   )
 })
