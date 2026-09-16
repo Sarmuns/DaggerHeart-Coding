@@ -9,10 +9,24 @@ import { MECANICA_D20, mecanicaDoJogador } from '../utils/mecanicaJogador'
 import { TEMA_PADRAO } from '../utils/temasDados'
 import ColorSwatchPicker from './ColorSwatchPicker'
 import DiceColorModal from './DiceColorModal'
+import { FichaCompleta } from './FichaJogador'
 
-function ColorSettingsPanel({ jogador, mecanica, onAtualizarJogador, onFechar, coresOcupadas = [] }) {
+function ColorSettingsPanel({
+  jogador,
+  mecanica,
+  marcadores,
+  onAtualizarJogador,
+  onSalvarMarcadores,
+  onFechar,
+  coresOcupadas = [],
+}) {
   const [modalAberto, setModalAberto] = useState(null) // 'hope' | 'fear' | null
+  const [rascunhoMarcadores, setRascunhoMarcadores] = useState(marcadores)
   const ehD20 = (mecanica ?? mecanicaDoJogador(jogador.nome)) === MECANICA_D20
+
+  function alterarRascunho(campo, valor) {
+    setRascunhoMarcadores((atual) => ({ ...atual, [campo]: valor }))
+  }
 
   return (
     <div className="config-painel">
@@ -120,6 +134,23 @@ function ColorSettingsPanel({ jogador, mecanica, onAtualizarJogador, onFechar, c
             onFechar={() => setModalAberto(null)}
           />
         ))}
+
+      <div className="config-painel-secao">
+        <h3>Marcadores do personagem</h3>
+        <FichaCompleta
+          nome={jogador.nome}
+          marcadores={rascunhoMarcadores}
+          editavel
+          onAlterarCampo={alterarRascunho}
+        />
+        <button
+          type="button"
+          className="botao-salvar-status"
+          onClick={() => onSalvarMarcadores(rascunhoMarcadores)}
+        >
+          Salvar marcadores
+        </button>
+      </div>
     </div>
   )
 }

@@ -495,9 +495,18 @@ function Room({ sala, jogador, onAtualizarJogador }) {
           type="button"
           className="secundario botao-config"
           onClick={() => setPainelAberto((v) => !v)}
-          aria-label="Configurar cores"
+          aria-label="Configurações"
         >
           ⚙
+        </button>
+        <button
+          type="button"
+          className="secundario botao-config"
+          onClick={() => setStatusAberto((v) => !v)}
+          aria-label="Status da mesa"
+          title="Ver status de todo mundo"
+        >
+          ☰
         </button>
       </header>
 
@@ -524,7 +533,9 @@ function Room({ sala, jogador, onAtualizarJogador }) {
         <ColorSettingsPanel
           jogador={jogador}
           mecanica={minhaMecanica}
+          marcadores={marcadores}
           onAtualizarJogador={onAtualizarJogador}
+          onSalvarMarcadores={salvarMarcadoresCompletos}
           onFechar={() => setPainelAberto(false)}
           coresOcupadas={jogadoresOnline
             .filter((jg) => jg.presenceKey !== presenceKeyRef.current)
@@ -561,7 +572,6 @@ function Room({ sala, jogador, onAtualizarJogador }) {
                   ? corResultado(resultadoJg.vencedor, { corHope: principal.cor, corFear: secundaria.cor })
                   : null
               }
-              onAbrirStatus={() => setStatusAberto(true)}
               marcadores={souEu ? marcadores : marcadoresDoPresence(jg)}
               editavelMarcadores={souEu}
               podeAjustarMarcador={podeAjustarMarcador}
@@ -575,9 +585,7 @@ function Room({ sala, jogador, onAtualizarJogador }) {
         <ModalStatus
           jogadores={jogadoresOnline}
           meuPresenceKey={presenceKeyRef.current}
-          meusMarcadores={marcadores}
           obterMarcadores={(jg) => (jg.presenceKey === presenceKeyRef.current ? marcadores : marcadoresDoPresence(jg))}
-          onSalvar={salvarMarcadoresCompletos}
           onFechar={() => setStatusAberto(false)}
         />
       )}
