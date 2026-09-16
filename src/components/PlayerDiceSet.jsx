@@ -40,7 +40,8 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
     onAbrirStatus,
     marcadores,
     editavelMarcadores,
-    onAlterarMarcador,
+    podeRemoverMarcador,
+    onRemoverMarcador,
   },
   ref,
 ) {
@@ -379,14 +380,7 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
       <span className="conjunto-dados-nome" style={{ color: cor }}>
         {nome}
       </span>
-      {marcadores && (
-        <ResumoLinha
-          nome={nome}
-          marcadores={marcadores}
-          editavel={editavelMarcadores}
-          onAlterarCampo={onAlterarMarcador}
-        />
-      )}
+      {marcadores && <ResumoLinha nome={nome} marcadores={marcadores} />}
       <div className="dados">
         <div className="dado-estagio">
           <span className="dado-label" style={{ color: corPrincipal }}>
@@ -437,7 +431,8 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
           nome={nome}
           marcadores={marcadores}
           editavel={editavelMarcadores}
-          onAlterarCampo={onAlterarMarcador}
+          podeRemover={podeRemoverMarcador}
+          onRemover={onRemoverMarcador}
         />
       )}
       {resultadoTexto && (

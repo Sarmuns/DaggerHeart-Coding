@@ -163,8 +163,29 @@ function Room({ sala, jogador, onAtualizarJogador }) {
     return () => clearTimeout(id)
   }, [jogador.nome, marcadores])
 
-  function alterarMarcador(campo, valor) {
-    setMarcadores((atual) => ({ ...atual, [campo]: valor }))
+  // Edição de verdade só acontece no modal (com botão de Salvar) — aqui só
+  // trocamos o objeto inteiro de uma vez.
+  function salvarMarcadoresCompletos(novosValores) {
+    setMarcadores(novosValores)
+  }
+
+  // Botões de remover (Esperança/Estresse/Fadiga) na caixa de dados — ação
+  // rápida e direta, mas com cooldown de 5s por marcador pra não afogar o
+  // servidor se várias pessoas ficarem clicando junto.
+  const COOLDOWN_REMOVER_MS = 5000
+  const [cooldownsRemover, setCooldownsRemover] = useState({})
+
+  function podeRemoverMarcador(campo) {
+    return (cooldownsRemover[campo] ?? 0) <= Date.now()
+  }
+
+  function removerMarcador(campo, quantidade) {
+    if (!podeRemoverMarcador(campo)) return
+    setMarcadores((atual) => ({ ...atual, [campo]: Math.max(0, atual[campo] - quantidade) }))
+    setCooldownsRemover((atual) => ({ ...atual, [campo]: Date.now() + COOLDOWN_REMOVER_MS }))
+    setTimeout(() => {
+      setCooldownsRemover((atual) => ({ ...atual, [campo]: 0 }))
+    }, COOLDOWN_REMOVER_MS)
   }
 
   function adicionarAviso(texto) {
@@ -542,7 +563,8 @@ function Room({ sala, jogador, onAtualizarJogador }) {
               onAbrirStatus={() => setStatusAberto(true)}
               marcadores={souEu ? marcadores : marcadoresDoPresence(jg)}
               editavelMarcadores={souEu}
-              onAlterarMarcador={alterarMarcador}
+              podeRemoverMarcador={podeRemoverMarcador}
+              onRemoverMarcador={removerMarcador}
             />
           )
         })}
@@ -552,8 +574,9 @@ function Room({ sala, jogador, onAtualizarJogador }) {
         <ModalStatus
           jogadores={jogadoresOnline}
           meuPresenceKey={presenceKeyRef.current}
+          meusMarcadores={marcadores}
           obterMarcadores={(jg) => (jg.presenceKey === presenceKeyRef.current ? marcadores : marcadoresDoPresence(jg))}
-          onAlterarCampo={alterarMarcador}
+          onSalvar={salvarMarcadoresCompletos}
           onFechar={() => setStatusAberto(false)}
         />
       )}

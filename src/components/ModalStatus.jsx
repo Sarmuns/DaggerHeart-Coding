@@ -1,11 +1,15 @@
 import { useRef, useState } from 'react'
-import { ehDM } from '../utils/mecanicaJogador'
 import { FichaCompleta } from './FichaJogador'
 
 const POSICAO_INICIAL = { x: 24, y: 96 }
 
-function ModalStatus({ jogadores, meuPresenceKey, obterMarcadores, onAlterarCampo, onFechar }) {
+// Edição de verdade só acontece aqui, num rascunho local — nada vai pro
+// banco/presence até apertar "Salvar". Assim um input mudando de novo em
+// novo (ou a setinha do <input type="number">) não gera uma gravação por
+// tecla, só uma por clique em Salvar.
+function ModalStatus({ jogadores, meuPresenceKey, meusMarcadores, obterMarcadores, onSalvar, onFechar }) {
   const [posicao, setPosicao] = useState(POSICAO_INICIAL)
+  const [rascunho, setRascunho] = useState(meusMarcadores)
   const arrastoRef = useRef(null)
 
   function mover(e) {
@@ -25,7 +29,13 @@ function ModalStatus({ jogadores, meuPresenceKey, obterMarcadores, onAlterarCamp
     window.addEventListener('pointerup', soltar)
   }
 
-  const jogadoresComFicha = jogadores.filter((jg) => !ehDM(jg.nome))
+  function alterarRascunho(campo, valor) {
+    setRascunho((atual) => ({ ...atual, [campo]: valor }))
+  }
+
+  function salvar() {
+    onSalvar(rascunho)
+  }
 
   return (
     <div className="modal-status" style={{ left: posicao.x, top: posicao.y }}>
@@ -36,18 +46,25 @@ function ModalStatus({ jogadores, meuPresenceKey, obterMarcadores, onAlterarCamp
         </button>
       </div>
       <div className="modal-status-corpo">
-        {jogadoresComFicha.length === 0 && <p className="modal-status-vazio">Ninguém pra mostrar ainda.</p>}
-        {jogadoresComFicha.map((jg) => (
-          <div key={jg.presenceKey} className="modal-status-jogador">
-            <strong style={{ color: jg.cor }}>{jg.nome}</strong>
-            <FichaCompleta
-              nome={jg.nome}
-              marcadores={obterMarcadores(jg)}
-              editavel={jg.presenceKey === meuPresenceKey}
-              onAlterarCampo={onAlterarCampo}
-            />
-          </div>
-        ))}
+        {jogadores.map((jg) => {
+          const souEu = jg.presenceKey === meuPresenceKey
+          return (
+            <div key={jg.presenceKey} className="modal-status-jogador">
+              <strong style={{ color: jg.cor }}>{jg.nome}</strong>
+              <FichaCompleta
+                nome={jg.nome}
+                marcadores={souEu ? rascunho : obterMarcadores(jg)}
+                editavel={souEu}
+                onAlterarCampo={alterarRascunho}
+              />
+              {souEu && (
+                <button type="button" className="botao-salvar-status" onClick={salvar}>
+                  Salvar
+                </button>
+              )}
+            </div>
+          )
+        })}
       </div>
     </div>
   )

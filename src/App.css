@@ -400,47 +400,33 @@ input {
   color: var(--text-muted, #8a8a8a);
 }
 
-/* Linha "PV 8/10 · Evasão 10 · Armadura 2/6" acima dos dados */
+/* Blocos "PV / Evasão / Armadura" acima dos dados — só leitura, rótulo em
+   cima e valor embaixo, cada um no seu bloquinho. */
 .resumo-linha {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  gap: 4px;
-  margin-top: -4px;
-  font-size: 12px;
+  gap: 14px;
+  margin-top: -2px;
+}
+
+.resumo-bloco {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+}
+
+.resumo-bloco-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: var(--text-muted, #8a8a8a);
 }
 
-.resumo-item {
-  display: inline-flex;
-  align-items: center;
-}
-
-.resumo-ponto {
-  opacity: 0.6;
-}
-
-.resumo-barra {
-  opacity: 0.6;
-  margin: 0 1px;
-}
-
-.numero-inline {
-  width: 20px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  font-weight: 600;
-  text-align: center;
-  border-radius: 4px;
-}
-
-.numero-inline:not(:disabled):hover,
-.numero-inline:not(:disabled):focus {
-  background: var(--code-bg);
+.resumo-bloco-valor {
+  font-size: 13px;
+  font-weight: 700;
 }
 
 /* Fileiras de pontinhos (Esperança/Estresse/Fadiga, ou Medo pro DM) */
@@ -479,10 +465,48 @@ input {
   border-radius: 50%;
   border: 1.5px solid var(--border);
   background: transparent;
+  display: inline-block;
+}
+
+.track-linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.track-remover {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.track-remover input {
+  width: 26px;
+  padding: 1px 2px;
+  font-size: 11px;
+  text-align: center;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+}
+
+.track-remover button {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  line-height: 1;
+  font-size: 13px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
   cursor: pointer;
 }
 
-.pip:disabled {
+.track-remover button:disabled {
+  opacity: 0.4;
   cursor: default;
 }
 
@@ -892,6 +916,19 @@ input {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-status-jogador:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.botao-salvar-status {
+  align-self: flex-start;
+  padding: 4px 12px;
+  font-size: 13px;
 }
 
 .modal-status-vazio {

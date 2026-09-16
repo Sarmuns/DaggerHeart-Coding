@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { ehDM } from '../utils/mecanicaJogador'
 
 function paraNumero(valor) {
@@ -5,20 +6,8 @@ function paraNumero(valor) {
   return Number.isFinite(n) ? n : 0
 }
 
-function NumeroInline({ valor, editavel, onAlterar }) {
-  return (
-    <input
-      type="number"
-      className="numero-inline"
-      value={valor}
-      disabled={!editavel}
-      onChange={(e) => onAlterar(paraNumero(e.target.value))}
-    />
-  )
-}
-
 // Marcador simples: só um número (ex. Evasão, Limiares de Dano) — usado no
-// modal de status.
+// modal de status, onde a edição é liberada.
 export function MarcadorSimples({ label, valor, editavel, onAlterar }) {
   return (
     <label className="marcador marcador--simples">
@@ -33,8 +22,7 @@ export function MarcadorSimples({ label, valor, editavel, onAlterar }) {
   )
 }
 
-// Marcador em track: valor atual / máximo — usado no modal de status, pra
-// ajustar o máximo (os pontinhos embaixo dos dados só mexem no atual).
+// Marcador em track: valor atual / máximo — usado no modal de status.
 export function MarcadorTrack({ label, valor, max, editavel, onAlterarValor, onAlterarMax }) {
   return (
     <div className="marcador marcador--track">
@@ -58,57 +46,80 @@ export function MarcadorTrack({ label, valor, max, editavel, onAlterarValor, onA
   )
 }
 
-// Linha compacta acima dos dados: PV, Evasão e Armadura "escritos" numa
-// linha só. O DM não tem personagem, então essa linha some pra ele — o
-// Medo dele vira só os pontinhos abaixo dos dados (ver PipsJogador).
-export function ResumoLinha({ nome, marcadores, editavel, onAlterarCampo }) {
+// Linha "PV / Evasão / Armadura" acima dos dados — só leitura (edição de
+// verdade fica no modal de status). Rótulo em cima, valor embaixo, cada um
+// no seu próprio bloco, pra não virar uma sopa de texto colado.
+export function ResumoLinha({ nome, marcadores }) {
   if (ehDM(nome)) return null
-
-  function alterar(campo) {
-    return (valor) => onAlterarCampo(campo, valor)
-  }
 
   return (
     <div className="resumo-linha">
-      <span className="resumo-item">
-        PV <NumeroInline valor={marcadores.pv} editavel={editavel} onAlterar={alterar('pv')} />
-        <span className="resumo-barra">/</span>
-        <NumeroInline valor={marcadores.pvMax} editavel={editavel} onAlterar={alterar('pvMax')} />
-      </span>
-      <span className="resumo-ponto">·</span>
-      <span className="resumo-item">
-        Evasão <NumeroInline valor={marcadores.evasao} editavel={editavel} onAlterar={alterar('evasao')} />
-      </span>
-      <span className="resumo-ponto">·</span>
-      <span className="resumo-item">
-        Armadura <NumeroInline valor={marcadores.armadura} editavel={editavel} onAlterar={alterar('armadura')} />
-        <span className="resumo-barra">/</span>
-        <NumeroInline valor={marcadores.armaduraMax} editavel={editavel} onAlterar={alterar('armaduraMax')} />
-      </span>
+      <div className="resumo-bloco">
+        <span className="resumo-bloco-label">PV</span>
+        <span className="resumo-bloco-valor">
+          {marcadores.pv}/{marcadores.pvMax}
+        </span>
+      </div>
+      <div className="resumo-bloco">
+        <span className="resumo-bloco-label">Evasão</span>
+        <span className="resumo-bloco-valor">{marcadores.evasao}</span>
+      </div>
+      <div className="resumo-bloco">
+        <span className="resumo-bloco-label">Armadura</span>
+        <span className="resumo-bloco-valor">
+          {marcadores.armadura}/{marcadores.armaduraMax}
+        </span>
+      </div>
     </div>
   )
 }
 
-// Uma fileira de pontinhos: clicar num pino marca até ele; clicar de novo
-// no último pino marcado desmarca — jeito rápido de bater o marcador sem
-// digitar número, igual ficha física.
-function TrackPips({ label, valor, max, editavel, onAlterarValor }) {
+// Só a fileira de pontinhos, sem interação — usada tanto na caixa de dados
+// (só leitura) quanto poderia ser reaproveitada em outro lugar.
+function TrackPips({ label, valor, max }) {
   const total = Math.max(max, 0)
   return (
     <div className="track-pips">
       <span className="track-pips-label">{label}</span>
       <div className="track-pips-bolinhas">
         {Array.from({ length: total }, (_, i) => i + 1).map((n) => (
-          <button
-            key={n}
-            type="button"
-            className={`pip${n <= valor ? ' pip--cheio' : ''}`}
-            disabled={!editavel}
-            onClick={() => onAlterarValor(n === valor ? n - 1 : n)}
-            aria-label={`${label} ${n} de ${max}`}
-          />
+          <span key={n} className={`pip${n <= valor ? ' pip--cheio' : ''}`} />
         ))}
       </div>
+    </div>
+  )
+}
+
+// Pontinhos + controle de "remover N" (só quando editável) — o único jeito
+// de alterar Esperança/Estresse/Fadiga direto na caixa de dados. Tem
+// cooldown de 5s (controlado pelo Room) pra não virar spam de gravação no
+// banco quando várias pessoas apertam ao mesmo tempo.
+function LinhaTrack({ label, valor, max, editavel, podeRemover, onRemover }) {
+  const [quantidade, setQuantidade] = useState(1)
+  const limite = Math.max(max, 1)
+
+  return (
+    <div className="track-linha">
+      <TrackPips label={label} valor={valor} max={max} />
+      {editavel && (
+        <div className="track-remover">
+          <input
+            type="number"
+            min={1}
+            max={limite}
+            value={quantidade}
+            onChange={(e) => setQuantidade(Math.min(Math.max(1, paraNumero(e.target.value)), limite))}
+          />
+          <button
+            type="button"
+            disabled={!podeRemover}
+            title={podeRemover ? `Remover ${label.toLowerCase()}` : 'Espera o cooldown acabar'}
+            onClick={() => onRemover(quantidade)}
+          >
+            −
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -116,64 +127,88 @@ function TrackPips({ label, valor, max, editavel, onAlterarValor }) {
 // Pontinhos abaixo dos dados: Esperança, Estresse e Fadiga pro jogador; só
 // Medo pro DM (no Daggerheart físico o Medo já é literalmente uma fileira
 // de fichas, então isso é fiel ao jogo de mesa).
-export function PipsJogador({ nome, marcadores, editavel, onAlterarCampo }) {
-  function alterar(campo) {
-    return (valor) => onAlterarCampo(campo, valor)
-  }
-
+export function PipsJogador({ nome, marcadores, editavel, podeRemover, onRemover }) {
   if (ehDM(nome)) {
     return (
       <div className="pips-jogador">
-        <TrackPips
-          label="Medo"
-          valor={marcadores.fear}
-          max={marcadores.fearMax}
-          editavel={editavel}
-          onAlterarValor={alterar('fear')}
-        />
+        <TrackPips label="Medo" valor={marcadores.fear} max={marcadores.fearMax} />
       </div>
     )
   }
 
   return (
     <div className="pips-jogador">
-      <TrackPips
+      <LinhaTrack
         label="Esperança"
         valor={marcadores.esperanca}
         max={marcadores.esperancaMax}
         editavel={editavel}
-        onAlterarValor={alterar('esperanca')}
+        podeRemover={podeRemover?.('esperanca')}
+        onRemover={(qtd) => onRemover('esperanca', qtd)}
       />
-      <TrackPips
+      <LinhaTrack
         label="Estresse"
         valor={marcadores.estresse}
         max={marcadores.estresseMax}
         editavel={editavel}
-        onAlterarValor={alterar('estresse')}
+        podeRemover={podeRemover?.('estresse')}
+        onRemover={(qtd) => onRemover('estresse', qtd)}
       />
-      <TrackPips
+      <LinhaTrack
         label="Fadiga"
         valor={marcadores.fadiga}
         max={marcadores.fadigaMax}
         editavel={editavel}
-        onAlterarValor={alterar('fadiga')}
+        podeRemover={podeRemover?.('fadiga')}
+        onRemover={(qtd) => onRemover('fadiga', qtd)}
       />
     </div>
   )
 }
 
-// Os marcadores restantes (fora do resumo e dos pontinhos), mostrados só
-// dentro do modal de status — é onde se ajusta o máximo de cada track e os
-// Limiares de Dano. Pro DM não sobra nada aqui.
+// Ficha completa e editável, só dentro do modal de status — junta tudo que
+// não está na linha de resumo nem nos pontinhos rápidos. É onde de fato se
+// ajustam os valores (com um botão de Salvar explícito por fora, no
+// modal), em vez de gravar a cada tecla.
 export function FichaCompleta({ nome, marcadores, editavel, onAlterarCampo }) {
-  if (ehDM(nome)) return null
-
   function alterar(campo) {
     return (valor) => onAlterarCampo(campo, valor)
   }
 
+  if (ehDM(nome)) {
+    return (
+      <div className="ficha-jogador">
+        <MarcadorTrack
+          label="Medo"
+          valor={marcadores.fear}
+          max={marcadores.fearMax}
+          editavel={editavel}
+          onAlterarValor={alterar('fear')}
+          onAlterarMax={alterar('fearMax')}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="ficha-jogador">
+      <MarcadorTrack
+        label="PV"
+        valor={marcadores.pv}
+        max={marcadores.pvMax}
+        editavel={editavel}
+        onAlterarValor={alterar('pv')}
+        onAlterarMax={alterar('pvMax')}
+      />
+      <MarcadorSimples label="Evasão" valor={marcadores.evasao} editavel={editavel} onAlterar={alterar('evasao')} />
+      <MarcadorTrack
+        label="Armadura"
+        valor={marcadores.armadura}
+        max={marcadores.armaduraMax}
+        editavel={editavel}
+        onAlterarValor={alterar('armadura')}
+        onAlterarMax={alterar('armaduraMax')}
+      />
       <MarcadorTrack
         label="Esperança"
         valor={marcadores.esperanca}
