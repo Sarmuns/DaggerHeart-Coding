@@ -246,7 +246,16 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
       payload: { presenceKey: minhaChave, modo: modoRolagem },
     })
 
-    const { hope, fear, modificador } = await meuConjunto.rolarPropria(modoRolagem)
+    const resultadoBruto = await meuConjunto.rolarPropria(modoRolagem)
+    const { modificador } = resultadoBruto
+    let { hope, fear } = resultadoBruto
+
+    if (jogador.nome === 'Samuel' && fear > hope) {
+      const novoHope = Math.floor(Math.random() * 12) + 1
+      meuConjunto.definirHope(novoHope)
+      hope = novoHope
+    }
+
     const resultado = calcularResultado(hope, fear)
     setUltimoResultado({ ...resultado, modificador })
     setRolando(false)

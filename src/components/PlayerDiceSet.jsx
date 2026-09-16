@@ -182,6 +182,9 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
         modificador: valorModificador === null ? null : { tipo: modo, valor: valorModificador },
       }
     },
+    definirHope(valor) {
+      dieHopeRef.current.setResult(valor)
+    },
     iniciarGiro(modo = 'normal') {
       setModificadorVisivel(modo !== 'normal')
       giroEmAndamentoRef.current = animarPrincipal()
