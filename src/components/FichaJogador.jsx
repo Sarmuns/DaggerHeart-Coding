@@ -6,7 +6,7 @@ function paraNumero(valor) {
 }
 
 // Marcador simples: só um número (ex. Evasão, Limiares de Dano).
-function MarcadorSimples({ label, valor, editavel, onAlterar }) {
+export function MarcadorSimples({ label, valor, editavel, onAlterar }) {
   return (
     <label className="marcador marcador--simples">
       <span className="marcador-label">{label}</span>
@@ -23,7 +23,7 @@ function MarcadorSimples({ label, valor, editavel, onAlterar }) {
 // Marcador em track: valor atual / máximo (PV, Esperança, Estresse, Fadiga,
 // Armadura, Medo) — ambos editáveis livremente, sem limitar o valor atual
 // ao máximo (a mesa decide se estourar o track significa algo).
-function MarcadorTrack({ label, valor, max, editavel, onAlterarValor, onAlterarMax }) {
+export function MarcadorTrack({ label, valor, max, editavel, onAlterarValor, onAlterarMax }) {
   return (
     <div className="marcador marcador--track">
       <span className="marcador-label">{label}</span>
@@ -46,10 +46,10 @@ function MarcadorTrack({ label, valor, max, editavel, onAlterarValor, onAlterarM
   )
 }
 
-// Ficha compacta de personagem por jogador. Pro jogador com tag de DM, os
-// marcadores normais somem (pra ele e pra todo mundo) e no lugar aparece só
-// o track de Medo — o recurso do mestre, não de personagem.
-function FichaJogador({ nome, marcadores, editavel, onAlterarCampo }) {
+// Resumo compacto, mostrado junto da caixa de dados de cada jogador: só o
+// essencial pra bater o olho (PV, Evasão, Armadura). Pro DM, os marcadores
+// normais não existem — o resumo dele é só o track de Medo.
+export function FichaResumo({ nome, marcadores, editavel, onAlterarCampo }) {
   function alterar(campo) {
     return (valor) => onAlterarCampo(campo, valor)
   }
@@ -79,6 +79,30 @@ function FichaJogador({ nome, marcadores, editavel, onAlterarCampo }) {
         onAlterarValor={alterar('pv')}
         onAlterarMax={alterar('pvMax')}
       />
+      <MarcadorSimples label="Evasão" valor={marcadores.evasao} editavel={editavel} onAlterar={alterar('evasao')} />
+      <MarcadorTrack
+        label="Armadura"
+        valor={marcadores.armadura}
+        max={marcadores.armaduraMax}
+        editavel={editavel}
+        onAlterarValor={alterar('armadura')}
+        onAlterarMax={alterar('armaduraMax')}
+      />
+    </div>
+  )
+}
+
+// Os demais marcadores (fora do resumo compacto), mostrados só dentro do
+// modal de status. Pro DM não sobra nada aqui — o Medo já está no resumo.
+export function FichaCompleta({ nome, marcadores, editavel, onAlterarCampo }) {
+  if (ehDM(nome)) return null
+
+  function alterar(campo) {
+    return (valor) => onAlterarCampo(campo, valor)
+  }
+
+  return (
+    <div className="ficha-jogador">
       <MarcadorTrack
         label="Esperança"
         valor={marcadores.esperanca}
@@ -103,15 +127,6 @@ function FichaJogador({ nome, marcadores, editavel, onAlterarCampo }) {
         onAlterarValor={alterar('fadiga')}
         onAlterarMax={alterar('fadigaMax')}
       />
-      <MarcadorTrack
-        label="Armadura"
-        valor={marcadores.armadura}
-        max={marcadores.armaduraMax}
-        editavel={editavel}
-        onAlterarValor={alterar('armadura')}
-        onAlterarMax={alterar('armaduraMax')}
-      />
-      <MarcadorSimples label="Evasão" valor={marcadores.evasao} editavel={editavel} onAlterar={alterar('evasao')} />
       <MarcadorSimples
         label="Limiar Maior"
         valor={marcadores.limiarMaior}
@@ -127,5 +142,3 @@ function FichaJogador({ nome, marcadores, editavel, onAlterarCampo }) {
     </div>
   )
 }
-
-export default FichaJogador

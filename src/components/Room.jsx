@@ -19,7 +19,8 @@ import {
 import { MARCADORES_PADRAO, marcadoresDoPresence } from '../utils/marcadoresJogador'
 import { carregarMarcadoresDoJogador, salvarMarcadoresDoJogador } from '../utils/marcadoresJogadorDb'
 import ColorSettingsPanel from './ColorSettingsPanel'
-import FichaJogador from './FichaJogador'
+import { FichaResumo } from './FichaJogador'
+import ModalStatus from './ModalStatus'
 import PlayerDiceSet from './PlayerDiceSet'
 
 const COR_CRITICO = '#aa3bff'
@@ -126,6 +127,7 @@ function Room({ sala, jogador, onAtualizarJogador }) {
   const [historico, setHistorico] = useState([])
   const [filtroData, setFiltroData] = useState('')
   const [painelAberto, setPainelAberto] = useState(false)
+  const [statusAberto, setStatusAberto] = useState(false)
   const [jogadoresOnline, setJogadoresOnline] = useState([])
   const [modoRolagem, setModoRolagem] = useState('normal') // 'normal' | 'vantagem' | 'desvantagem'
   // Só quem tem a tag de DM pode alternar isso — pra todo mundo, fica fixo
@@ -538,8 +540,9 @@ function Room({ sala, jogador, onAtualizarJogador }) {
                     ? corResultado(resultadoJg.vencedor, { corHope: principal.cor, corFear: secundaria.cor })
                     : null
                 }
+                onAbrirStatus={() => setStatusAberto(true)}
               />
-              <FichaJogador
+              <FichaResumo
                 nome={jg.nome}
                 marcadores={souEu ? marcadores : marcadoresDoPresence(jg)}
                 editavel={souEu}
@@ -549,6 +552,16 @@ function Room({ sala, jogador, onAtualizarJogador }) {
           )
         })}
       </div>
+
+      {statusAberto && (
+        <ModalStatus
+          jogadores={jogadoresOnline}
+          meuPresenceKey={presenceKeyRef.current}
+          obterMarcadores={(jg) => (jg.presenceKey === presenceKeyRef.current ? marcadores : marcadoresDoPresence(jg))}
+          onAlterarCampo={alterarMarcador}
+          onFechar={() => setStatusAberto(false)}
+        />
+      )}
 
       {ehDM(jogador.nome) && (
         <div className="modo-rolagem">

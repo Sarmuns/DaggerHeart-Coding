@@ -36,6 +36,7 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
     destaque,
     resultadoTexto,
     resultadoCor,
+    onAbrirStatus,
   },
   ref,
 ) {
@@ -360,6 +361,17 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
 
   return (
     <div className={`conjunto-dados${destaque ? ' conjunto-dados--voce' : ''}`}>
+      {onAbrirStatus && (
+        <button
+          type="button"
+          className="conjunto-dados-menu"
+          onClick={onAbrirStatus}
+          aria-label={`Ver status de ${nome}`}
+          title="Ver status"
+        >
+          ☰
+        </button>
+      )}
       <span className="conjunto-dados-nome" style={{ color: cor }}>
         {nome}
       </span>
