@@ -7,15 +7,11 @@ import { salvarEstiloDoJogador } from './utils/preferenciasJogadorDb'
 import './App.css'
 
 function App() {
-  const [sala, setSala] = useState(null) // { codigo, senha, nome }
+  const [sala, setSala] = useState(null) // { codigo, senha, roomId }
   const [jogador, setJogador] = useState(null) // { nome, cor, corHope, corFear, corTextoHope, corTextoFear }
 
   function entrarSala(dados) {
-    setSala({ nome: '', ...dados })
-  }
-
-  function atualizarSala(campos) {
-    setSala((atual) => ({ ...atual, ...campos }))
+    setSala(dados)
   }
 
   function atualizarJogador(campos) {
@@ -36,12 +32,7 @@ function App() {
   }
 
   return (
-    <Room
-      sala={sala}
-      onAtualizarSala={atualizarSala}
-      jogador={jogador}
-      onAtualizarJogador={atualizarJogador}
-    />
+    <Room sala={sala} jogador={jogador} onAtualizarJogador={atualizarJogador} />
   )
 }
 

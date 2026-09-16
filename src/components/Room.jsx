@@ -67,7 +67,7 @@ function linhaParaHistorico(linha) {
   }
 }
 
-function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
+function Room({ sala, jogador, onAtualizarJogador }) {
   const canalRef = useRef(null)
   const presenceKeyRef = useRef(crypto.randomUUID())
   const diceRefsRef = useRef(new Map())
@@ -400,13 +400,7 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
     <section className="room">
       <header className="room-header">
         <div className="sala-titulo">
-          <input
-            className="input-nome-sala"
-            value={sala.nome}
-            onChange={(e) => onAtualizarSala({ nome: e.target.value })}
-            placeholder="Nome da mesa"
-            maxLength={40}
-          />
+          <h1 className="nome-mesa">Age of Umbra</h1>
           <p className="sala-subtitulo">
             <strong>{sala.codigo}</strong>
           </p>
