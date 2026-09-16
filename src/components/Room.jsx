@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { calcularResultado, calcularResultadoD20, calcularTotal, textoResultado } from '../utils/dice'
+import { calcularResultado, calcularResultadoD20, calcularTotal, melhorPar, textoResultado } from '../utils/dice'
 import {
   MECANICA_D20,
   estiloPrincipal,
@@ -294,10 +294,21 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
     if (mecanica === MECANICA_D20) {
       resultado = calcularResultadoD20(hope, fear)
     } else {
-      if (jogador.nome === 'Samuel' && fear > hope) {
-        const novoHope = Math.floor(Math.random() * 12) + 1
-        meuConjunto.definirHope(novoHope)
-        hope = novoHope
+      if (jogador.nome === 'Samuel') {
+        // "Vantagem dupla": rola um segundo par oculto (sem animação) e fica
+        // com o melhor par completo — nunca mistura hope de um par com fear
+        // do outro, senão a vantagem fica em ambos os dados ao mesmo tempo.
+        const parOculto = {
+          hope: Math.floor(Math.random() * 12) + 1,
+          fear: Math.floor(Math.random() * 12) + 1,
+        }
+        const melhor = melhorPar({ hope, fear }, parOculto)
+        if (melhor.hope !== hope || melhor.fear !== fear) {
+          meuConjunto.definirHope(melhor.hope)
+          meuConjunto.definirFear(melhor.fear)
+          hope = melhor.hope
+          fear = melhor.fear
+        }
       }
       resultado = calcularResultado(hope, fear)
     }

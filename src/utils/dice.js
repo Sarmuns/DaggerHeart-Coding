@@ -12,6 +12,23 @@ export function calcularResultado(hope, fear) {
   return { vencedor: hope > fear ? 'hope' : 'fear', hope, fear }
 }
 
+// Rank de um par pra comparação de "vantagem dupla": crítico > esperança >
+// medo; dentro do mesmo rank, o par com maior soma vence.
+function rankPar(hope, fear) {
+  const rank = hope === fear ? 2 : hope > fear ? 1 : 0
+  return [rank, hope + fear]
+}
+
+// Compara dois pares completos (hope+fear) e devolve o melhor, sem misturar
+// o hope de um com o fear do outro — evita "vantagem" nos dois dados ao
+// mesmo tempo, que deixaria o resultado quase sempre garantido.
+export function melhorPar(parA, parB) {
+  const [rankA, totalA] = rankPar(parA.hope, parA.fear)
+  const [rankB, totalB] = rankPar(parB.hope, parB.fear)
+  if (rankA !== rankB) return rankA > rankB ? parA : parB
+  return totalA >= totalB ? parA : parB
+}
+
 export function calcularTotal(hope, fear, modificador) {
   const base = hope + fear
   if (!modificador) return base

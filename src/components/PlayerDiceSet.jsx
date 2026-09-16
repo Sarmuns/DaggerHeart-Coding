@@ -289,6 +289,9 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
     definirHope(valor) {
       dieHopeRef.current.setResult(valor)
     },
+    definirFear(valor) {
+      dieFearRef.current.setResult(valor)
+    },
   }))
 
   return (
