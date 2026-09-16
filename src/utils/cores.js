@@ -8,3 +8,9 @@ export const CORES = [
   { nome: 'Rosa', valor: '#ec4899' },
   { nome: 'Ciano', valor: '#06b6d4' },
 ]
+
+export function primeiraCorLivre(coresOcupadas, preferida) {
+  if (preferida && !coresOcupadas.includes(preferida)) return preferida
+  const livre = CORES.find((c) => !coresOcupadas.includes(c.valor))
+  return livre ? livre.valor : CORES[0].valor
+}

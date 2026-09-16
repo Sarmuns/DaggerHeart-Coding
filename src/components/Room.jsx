@@ -1,14 +1,22 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { calcularResultado, calcularTotal, textoResultado } from '../utils/dice'
+import { calcularResultado, calcularResultadoD20, calcularTotal, textoResultado } from '../utils/dice'
+import {
+  MECANICA_D20,
+  estiloPrincipal,
+  estiloSecundario,
+  mecanicaDoJogador,
+} from '../utils/mecanicaJogador'
 import ColorSettingsPanel from './ColorSettingsPanel'
 import PlayerDiceSet from './PlayerDiceSet'
 
 const COR_CRITICO = '#aa3bff'
 const FUSO_BRASIL = 'America/Sao_Paulo'
 
+// "cores" aqui sempre chega já resolvida (corHope/corFear = principal/
+// secundária da mecânica em uso), então não precisa saber d20 vs dualidade.
 function corResultado(vencedor, cores) {
-  if (vencedor === 'hope') return cores.corHope
+  if (vencedor === 'hope' || vencedor === 'd20') return cores.corHope
   if (vencedor === 'fear') return cores.corFear
   return COR_CRITICO
 }
@@ -152,6 +160,14 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
             corBordaFear: jogador.corBordaFear,
             temaHope: jogador.temaHope,
             temaFear: jogador.temaFear,
+            corD20: jogador.corD20,
+            corBordaD20: jogador.corBordaD20,
+            corTextoD20: jogador.corTextoD20,
+            temaD20: jogador.temaD20,
+            corD20Extra: jogador.corD20Extra,
+            corBordaD20Extra: jogador.corBordaD20Extra,
+            corTextoD20Extra: jogador.corTextoD20Extra,
+            temaD20Extra: jogador.temaD20Extra,
           })
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
           console.warn('Conexão da sala perdida:', status)
@@ -182,6 +198,14 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
         corBordaFear: jogador.corBordaFear,
         temaHope: jogador.temaHope,
         temaFear: jogador.temaFear,
+        corD20: jogador.corD20,
+        corBordaD20: jogador.corBordaD20,
+        corTextoD20: jogador.corTextoD20,
+        temaD20: jogador.temaD20,
+        corD20Extra: jogador.corD20Extra,
+        corBordaD20Extra: jogador.corBordaD20Extra,
+        corTextoD20Extra: jogador.corTextoD20Extra,
+        temaD20Extra: jogador.temaD20Extra,
       })
     }, 150)
     return () => clearTimeout(id)
@@ -196,6 +220,14 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
     jogador.corBordaFear,
     jogador.temaHope,
     jogador.temaFear,
+    jogador.corD20,
+    jogador.corBordaD20,
+    jogador.corTextoD20,
+    jogador.temaD20,
+    jogador.corD20Extra,
+    jogador.corBordaD20Extra,
+    jogador.corTextoD20Extra,
+    jogador.temaD20Extra,
   ])
 
   function registrarRefDados(presenceKey, node) {
@@ -214,18 +246,25 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
     setHistorico([])
   }
 
-  async function registrarRolagem(resultado, modificador) {
+  async function registrarRolagem(resultado, modificador, mecanica) {
+    const total =
+      mecanica === MECANICA_D20 ? resultado.hope : calcularTotal(resultado.hope, resultado.fear, modificador)
+    // A tabela só tem cor_hope/cor_fear — guardamos aí a cor do slot
+    // principal/secundário resolvida pra mecânica em uso (dualidade ou d20),
+    // pra o histórico continuar colorindo certo independente do jogador.
+    const principal = estiloPrincipal(jogador, mecanica)
+    const secundaria = estiloSecundario(jogador, mecanica)
     const { error } = await supabase.from('rolls').insert({
       room_id: sala.roomId,
       jogador: jogador.nome,
       cor: jogador.cor,
-      cor_hope: jogador.corHope,
-      cor_fear: jogador.corFear,
+      cor_hope: principal.cor,
+      cor_fear: secundaria.cor,
       dado_hope: resultado.hope,
       dado_fear: resultado.fear,
       resultado: textoResultado(resultado),
       vencedor: resultado.vencedor,
-      total: calcularTotal(resultado.hope, resultado.fear, modificador),
+      total,
       modificador_tipo: modificador?.tipo ?? null,
       modificador_valor: modificador?.valor ?? null,
     })
@@ -246,28 +285,36 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
       payload: { presenceKey: minhaChave, modo: modoRolagem },
     })
 
+    const mecanica = mecanicaDoJogador(jogador.nome)
     const resultadoBruto = await meuConjunto.rolarPropria(modoRolagem)
     const { modificador } = resultadoBruto
     let { hope, fear } = resultadoBruto
 
-    if (jogador.nome === 'Samuel' && fear > hope) {
-      const novoHope = Math.floor(Math.random() * 12) + 1
-      meuConjunto.definirHope(novoHope)
-      hope = novoHope
+    let resultado
+    if (mecanica === MECANICA_D20) {
+      resultado = calcularResultadoD20(hope, fear)
+    } else {
+      if (jogador.nome === 'Samuel' && fear > hope) {
+        const novoHope = Math.floor(Math.random() * 12) + 1
+        meuConjunto.definirHope(novoHope)
+        hope = novoHope
+      }
+      resultado = calcularResultado(hope, fear)
     }
 
-    const resultado = calcularResultado(hope, fear)
     setUltimoResultado({ ...resultado, modificador })
     setRolando(false)
 
     canalRef.current?.send({
       type: 'broadcast',
       event: 'resultado',
-      payload: { presenceKey: minhaChave, hope, fear, modificador },
+      payload: { presenceKey: minhaChave, hope: resultado.hope, fear: resultado.fear, modificador },
     })
 
-    registrarRolagem(resultado, modificador)
+    registrarRolagem(resultado, modificador, mecanica)
   }
+
+  const minhaMecanica = mecanicaDoJogador(jogador.nome)
 
   return (
     <section className="room">
@@ -327,27 +374,36 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
           jogador={jogador}
           onAtualizarJogador={onAtualizarJogador}
           onFechar={() => setPainelAberto(false)}
+          coresOcupadas={jogadoresOnline
+            .filter((jg) => jg.presenceKey !== presenceKeyRef.current)
+            .map((jg) => jg.cor)}
         />
       )}
 
       <div className="mesa-dados">
-        {jogadoresOnline.map((jg) => (
-          <PlayerDiceSet
-            key={jg.presenceKey}
-            ref={(node) => registrarRefDados(jg.presenceKey, node)}
-            nome={jg.nome}
-            cor={jg.cor}
-            corHope={jg.corHope}
-            corFear={jg.corFear}
-            corTextoHope={jg.corTextoHope}
-            corTextoFear={jg.corTextoFear}
-            corBordaHope={jg.corBordaHope}
-            corBordaFear={jg.corBordaFear}
-            temaHope={jg.temaHope}
-            temaFear={jg.temaFear}
-            destaque={jg.presenceKey === presenceKeyRef.current}
-          />
-        ))}
+        {jogadoresOnline.map((jg) => {
+          const mecanicaJg = mecanicaDoJogador(jg.nome)
+          const principal = estiloPrincipal(jg, mecanicaJg)
+          const secundaria = estiloSecundario(jg, mecanicaJg)
+          return (
+            <PlayerDiceSet
+              key={jg.presenceKey}
+              ref={(node) => registrarRefDados(jg.presenceKey, node)}
+              nome={jg.nome}
+              cor={jg.cor}
+              corPrincipal={principal.cor}
+              corBordaPrincipal={principal.borda}
+              corTextoPrincipal={principal.texto}
+              temaPrincipal={principal.tema}
+              corSecundaria={secundaria.cor}
+              corBordaSecundaria={secundaria.borda}
+              corTextoSecundaria={secundaria.texto}
+              temaSecundaria={secundaria.tema}
+              mecanica={mecanicaJg}
+              destaque={jg.presenceKey === presenceKeyRef.current}
+            />
+          )
+        })}
       </div>
 
       <div className="modo-rolagem">
@@ -363,14 +419,14 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
           className={`pill${modoRolagem === 'vantagem' ? ' pill--ativa' : ''}`}
           onClick={() => setModoRolagem('vantagem')}
         >
-          Vantagem (+d6)
+          {minhaMecanica === MECANICA_D20 ? 'Vantagem (2d20, maior)' : 'Vantagem (+d6)'}
         </button>
         <button
           type="button"
           className={`pill${modoRolagem === 'desvantagem' ? ' pill--ativa' : ''}`}
           onClick={() => setModoRolagem('desvantagem')}
         >
-          Desvantagem (-d6)
+          {minhaMecanica === MECANICA_D20 ? 'Desvantagem (2d20, menor)' : 'Desvantagem (-d6)'}
         </button>
       </div>
 
@@ -379,7 +435,15 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
       </button>
 
       {ultimoResultado && (
-        <p className="resultado" style={{ color: corResultado(ultimoResultado.vencedor, jogador) }}>
+        <p
+          className="resultado"
+          style={{
+            color: corResultado(ultimoResultado.vencedor, {
+              corHope: estiloPrincipal(jogador, minhaMecanica).cor,
+              corFear: estiloSecundario(jogador, minhaMecanica).cor,
+            }),
+          }}
+        >
           {textoResultado(ultimoResultado)}
         </p>
       )}
@@ -402,7 +466,11 @@ function Room({ sala, onAtualizarSala, jogador, onAtualizarJogador }) {
                 {item.hope} / {item.fear}
                 {item.modificador && (
                   <span className="historico-modificador">
-                    {item.modificador.tipo === 'vantagem' ? '+' : '−'}d6({item.modificador.valor})
+                    {item.modificador.valor != null
+                      ? `${item.modificador.tipo === 'vantagem' ? '+' : '−'}d6(${item.modificador.valor})`
+                      : item.modificador.tipo === 'vantagem'
+                        ? 'Vantagem'
+                        : 'Desvantagem'}
                   </span>
                 )}
               </span>

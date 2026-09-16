@@ -18,7 +18,21 @@ export function calcularTotal(hope, fear, modificador) {
   return modificador.tipo === 'vantagem' ? base + modificador.valor : base - modificador.valor
 }
 
+// mecânica d20 (estilo D&D): vantagem/desvantagem rolam 2d20 e ficam com o
+// maior/menor — "hope" guarda o valor mantido, "fear" o descartado (ou o
+// próprio valor, se não houve segunda rolagem).
+export function calcularResultadoD20(valorMantido, valorDescartado = valorMantido) {
+  return {
+    vencedor: valorMantido === 20 ? 'd20-critico' : 'd20',
+    hope: valorMantido,
+    fear: valorDescartado,
+  }
+}
+
 export function textoResultado({ vencedor, hope, fear, modificador }) {
+  if (vencedor === 'd20' || vencedor === 'd20-critico') {
+    return vencedor === 'd20-critico' ? `Crítico! (${hope})` : `${hope}`
+  }
   const total = calcularTotal(hope, fear, modificador)
   if (vencedor === 'critico') return `Crítico! (${total})`
   if (vencedor === 'hope') return `${total} com Esperança`
