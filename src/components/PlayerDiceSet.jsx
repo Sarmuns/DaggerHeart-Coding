@@ -1,5 +1,6 @@
 import { DiceRoller } from '@gnuton/css-dice-roller'
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
+import { PipsJogador, ResumoLinha } from './FichaJogador'
 import { MECANICA_D20 } from '../utils/mecanicaJogador'
 import { TEMA_PADRAO } from '../utils/temasDados'
 
@@ -37,6 +38,9 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
     resultadoTexto,
     resultadoCor,
     onAbrirStatus,
+    marcadores,
+    editavelMarcadores,
+    onAlterarMarcador,
   },
   ref,
 ) {
@@ -375,6 +379,14 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
       <span className="conjunto-dados-nome" style={{ color: cor }}>
         {nome}
       </span>
+      {marcadores && (
+        <ResumoLinha
+          nome={nome}
+          marcadores={marcadores}
+          editavel={editavelMarcadores}
+          onAlterarCampo={onAlterarMarcador}
+        />
+      )}
       <div className="dados">
         <div className="dado-estagio">
           <span className="dado-label" style={{ color: corPrincipal }}>
@@ -420,6 +432,14 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
           </div>
         )}
       </div>
+      {marcadores && (
+        <PipsJogador
+          nome={nome}
+          marcadores={marcadores}
+          editavel={editavelMarcadores}
+          onAlterarCampo={onAlterarMarcador}
+        />
+      )}
       {resultadoTexto && (
         <p
           className={`conjunto-dados-resultado${ehD20 ? ' conjunto-dados-resultado--d20' : ''}`}

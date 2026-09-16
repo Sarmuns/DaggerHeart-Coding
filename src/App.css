@@ -348,13 +348,6 @@ input {
   width: 100%;
 }
 
-.jogador-coluna {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
 .ficha-jogador {
   display: flex;
   flex-wrap: wrap;
@@ -365,10 +358,6 @@ input {
   padding: 8px 10px;
   border: 1px solid var(--border);
   border-radius: 10px;
-}
-
-.ficha-jogador--dm {
-  max-width: 140px;
 }
 
 .marcador {
@@ -409,6 +398,97 @@ input {
 .marcador-track-separador {
   font-size: 12px;
   color: var(--text-muted, #8a8a8a);
+}
+
+/* Linha "PV 8/10 · Evasão 10 · Armadura 2/6" acima dos dados */
+.resumo-linha {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-top: -4px;
+  font-size: 12px;
+  color: var(--text-muted, #8a8a8a);
+}
+
+.resumo-item {
+  display: inline-flex;
+  align-items: center;
+}
+
+.resumo-ponto {
+  opacity: 0.6;
+}
+
+.resumo-barra {
+  opacity: 0.6;
+  margin: 0 1px;
+}
+
+.numero-inline {
+  width: 20px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-align: center;
+  border-radius: 4px;
+}
+
+.numero-inline:not(:disabled):hover,
+.numero-inline:not(:disabled):focus {
+  background: var(--code-bg);
+}
+
+/* Fileiras de pontinhos (Esperança/Estresse/Fadiga, ou Medo pro DM) */
+.pips-jogador {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.track-pips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.track-pips-label {
+  min-width: 58px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted, #8a8a8a);
+  text-align: right;
+}
+
+.track-pips-bolinhas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.pip {
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+}
+
+.pip:disabled {
+  cursor: default;
+}
+
+.pip--cheio {
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 .conjunto-dados {

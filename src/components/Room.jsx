@@ -19,7 +19,6 @@ import {
 import { MARCADORES_PADRAO, marcadoresDoPresence } from '../utils/marcadoresJogador'
 import { carregarMarcadoresDoJogador, salvarMarcadoresDoJogador } from '../utils/marcadoresJogadorDb'
 import ColorSettingsPanel from './ColorSettingsPanel'
-import { FichaResumo } from './FichaJogador'
 import ModalStatus from './ModalStatus'
 import PlayerDiceSet from './PlayerDiceSet'
 
@@ -519,36 +518,32 @@ function Room({ sala, jogador, onAtualizarJogador }) {
           const resultadoJg = resultadosPorJogador[jg.presenceKey]
           const souEu = jg.presenceKey === presenceKeyRef.current
           return (
-            <div key={jg.presenceKey} className="jogador-coluna">
-              <PlayerDiceSet
-                ref={(node) => registrarRefDados(jg.presenceKey, node)}
-                nome={jg.nome}
-                cor={jg.cor}
-                corPrincipal={principal.cor}
-                corBordaPrincipal={principal.borda}
-                corTextoPrincipal={principal.texto}
-                temaPrincipal={principal.tema}
-                corSecundaria={secundaria.cor}
-                corBordaSecundaria={secundaria.borda}
-                corTextoSecundaria={secundaria.texto}
-                temaSecundaria={secundaria.tema}
-                mecanica={mecanicaJg}
-                destaque={souEu}
-                resultadoTexto={resultadoJg ? textoResultado(resultadoJg) : null}
-                resultadoCor={
-                  resultadoJg
-                    ? corResultado(resultadoJg.vencedor, { corHope: principal.cor, corFear: secundaria.cor })
-                    : null
-                }
-                onAbrirStatus={() => setStatusAberto(true)}
-              />
-              <FichaResumo
-                nome={jg.nome}
-                marcadores={souEu ? marcadores : marcadoresDoPresence(jg)}
-                editavel={souEu}
-                onAlterarCampo={alterarMarcador}
-              />
-            </div>
+            <PlayerDiceSet
+              key={jg.presenceKey}
+              ref={(node) => registrarRefDados(jg.presenceKey, node)}
+              nome={jg.nome}
+              cor={jg.cor}
+              corPrincipal={principal.cor}
+              corBordaPrincipal={principal.borda}
+              corTextoPrincipal={principal.texto}
+              temaPrincipal={principal.tema}
+              corSecundaria={secundaria.cor}
+              corBordaSecundaria={secundaria.borda}
+              corTextoSecundaria={secundaria.texto}
+              temaSecundaria={secundaria.tema}
+              mecanica={mecanicaJg}
+              destaque={souEu}
+              resultadoTexto={resultadoJg ? textoResultado(resultadoJg) : null}
+              resultadoCor={
+                resultadoJg
+                  ? corResultado(resultadoJg.vencedor, { corHope: principal.cor, corFear: secundaria.cor })
+                  : null
+              }
+              onAbrirStatus={() => setStatusAberto(true)}
+              marcadores={souEu ? marcadores : marcadoresDoPresence(jg)}
+              editavelMarcadores={souEu}
+              onAlterarMarcador={alterarMarcador}
+            />
           )
         })}
       </div>
