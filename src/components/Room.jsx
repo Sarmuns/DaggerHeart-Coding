@@ -169,23 +169,24 @@ function Room({ sala, jogador, onAtualizarJogador }) {
     setMarcadores(novosValores)
   }
 
-  // Botões de remover (Esperança/Estresse/Fadiga) na caixa de dados — ação
-  // rápida e direta, mas com cooldown de 5s por marcador pra não afogar o
-  // servidor se várias pessoas ficarem clicando junto.
-  const COOLDOWN_REMOVER_MS = 5000
-  const [cooldownsRemover, setCooldownsRemover] = useState({})
+  // Botões de +/- (Esperança/Estresse/Fadiga) na caixa de dados — ação
+  // rápida e direta, mas com cooldown de 5s por marcador (compartilhado
+  // entre somar e subtrair) pra não afogar o servidor se várias pessoas
+  // ficarem clicando junto.
+  const COOLDOWN_AJUSTE_MS = 5000
+  const [cooldownsAjuste, setCooldownsAjuste] = useState({})
 
-  function podeRemoverMarcador(campo) {
-    return (cooldownsRemover[campo] ?? 0) <= Date.now()
+  function podeAjustarMarcador(campo) {
+    return (cooldownsAjuste[campo] ?? 0) <= Date.now()
   }
 
-  function removerMarcador(campo, quantidade) {
-    if (!podeRemoverMarcador(campo)) return
-    setMarcadores((atual) => ({ ...atual, [campo]: Math.max(0, atual[campo] - quantidade) }))
-    setCooldownsRemover((atual) => ({ ...atual, [campo]: Date.now() + COOLDOWN_REMOVER_MS }))
+  function ajustarMarcador(campo, delta) {
+    if (!podeAjustarMarcador(campo)) return
+    setMarcadores((atual) => ({ ...atual, [campo]: Math.max(0, atual[campo] + delta) }))
+    setCooldownsAjuste((atual) => ({ ...atual, [campo]: Date.now() + COOLDOWN_AJUSTE_MS }))
     setTimeout(() => {
-      setCooldownsRemover((atual) => ({ ...atual, [campo]: 0 }))
-    }, COOLDOWN_REMOVER_MS)
+      setCooldownsAjuste((atual) => ({ ...atual, [campo]: 0 }))
+    }, COOLDOWN_AJUSTE_MS)
   }
 
   function adicionarAviso(texto) {
@@ -563,8 +564,8 @@ function Room({ sala, jogador, onAtualizarJogador }) {
               onAbrirStatus={() => setStatusAberto(true)}
               marcadores={souEu ? marcadores : marcadoresDoPresence(jg)}
               editavelMarcadores={souEu}
-              podeRemoverMarcador={podeRemoverMarcador}
-              onRemoverMarcador={removerMarcador}
+              podeAjustarMarcador={podeAjustarMarcador}
+              onAjustarMarcador={ajustarMarcador}
             />
           )
         })}

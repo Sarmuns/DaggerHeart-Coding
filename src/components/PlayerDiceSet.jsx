@@ -40,8 +40,8 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
     onAbrirStatus,
     marcadores,
     editavelMarcadores,
-    podeRemoverMarcador,
-    onRemoverMarcador,
+    podeAjustarMarcador,
+    onAjustarMarcador,
   },
   ref,
 ) {
@@ -431,8 +431,8 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
           nome={nome}
           marcadores={marcadores}
           editavel={editavelMarcadores}
-          podeRemover={podeRemoverMarcador}
-          onRemover={onRemoverMarcador}
+          podeAjustar={podeAjustarMarcador}
+          onAjustar={onAjustarMarcador}
         />
       )}
       {resultadoTexto && (

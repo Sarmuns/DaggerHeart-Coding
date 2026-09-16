@@ -90,16 +90,27 @@ function TrackPips({ label, valor, max }) {
   )
 }
 
-// Pontinhos + controle de "remover N" (só quando editável) — o único jeito
-// de alterar Esperança/Estresse/Fadiga direto na caixa de dados. Tem
-// cooldown de 5s (controlado pelo Room) pra não virar spam de gravação no
-// banco quando várias pessoas apertam ao mesmo tempo.
-function LinhaTrack({ label, valor, max, editavel, podeRemover, onRemover }) {
+// Pontinhos + controle de "+N / -N" (só quando editável) — o único jeito de
+// alterar Esperança/Estresse/Fadiga direto na caixa de dados. Tem cooldown
+// de 5s (controlado pelo Room, compartilhado entre + e -) pra não virar
+// spam de gravação no banco quando várias pessoas apertam ao mesmo tempo.
+function LinhaTrack({ label, valor, max, editavel, podeAjustar, onAjustar }) {
   const [quantidade, setQuantidade] = useState(1)
   const limite = Math.max(max, 1)
 
   return (
     <div className="track-linha">
+      {editavel && (
+        <button
+          type="button"
+          className="track-botao track-botao--somar"
+          disabled={!podeAjustar}
+          title={podeAjustar ? `Adicionar ${label.toLowerCase()}` : 'Espera o cooldown acabar'}
+          onClick={() => onAjustar(quantidade)}
+        >
+          +
+        </button>
+      )}
       <TrackPips label={label} valor={valor} max={max} />
       {editavel && (
         <div className="track-remover">
@@ -112,9 +123,10 @@ function LinhaTrack({ label, valor, max, editavel, podeRemover, onRemover }) {
           />
           <button
             type="button"
-            disabled={!podeRemover}
-            title={podeRemover ? `Remover ${label.toLowerCase()}` : 'Espera o cooldown acabar'}
-            onClick={() => onRemover(quantidade)}
+            className="track-botao"
+            disabled={!podeAjustar}
+            title={podeAjustar ? `Remover ${label.toLowerCase()}` : 'Espera o cooldown acabar'}
+            onClick={() => onAjustar(-quantidade)}
           >
             −
           </button>
@@ -127,7 +139,7 @@ function LinhaTrack({ label, valor, max, editavel, podeRemover, onRemover }) {
 // Pontinhos abaixo dos dados: Esperança, Estresse e Fadiga pro jogador; só
 // Medo pro DM (no Daggerheart físico o Medo já é literalmente uma fileira
 // de fichas, então isso é fiel ao jogo de mesa).
-export function PipsJogador({ nome, marcadores, editavel, podeRemover, onRemover }) {
+export function PipsJogador({ nome, marcadores, editavel, podeAjustar, onAjustar }) {
   if (ehDM(nome)) {
     return (
       <div className="pips-jogador">
@@ -143,24 +155,24 @@ export function PipsJogador({ nome, marcadores, editavel, podeRemover, onRemover
         valor={marcadores.esperanca}
         max={marcadores.esperancaMax}
         editavel={editavel}
-        podeRemover={podeRemover?.('esperanca')}
-        onRemover={(qtd) => onRemover('esperanca', qtd)}
+        podeAjustar={podeAjustar?.('esperanca')}
+        onAjustar={(delta) => onAjustar('esperanca', delta)}
       />
       <LinhaTrack
         label="Estresse"
         valor={marcadores.estresse}
         max={marcadores.estresseMax}
         editavel={editavel}
-        podeRemover={podeRemover?.('estresse')}
-        onRemover={(qtd) => onRemover('estresse', qtd)}
+        podeAjustar={podeAjustar?.('estresse')}
+        onAjustar={(delta) => onAjustar('estresse', delta)}
       />
       <LinhaTrack
         label="Fadiga"
         valor={marcadores.fadiga}
         max={marcadores.fadigaMax}
         editavel={editavel}
-        podeRemover={podeRemover?.('fadiga')}
-        onRemover={(qtd) => onRemover('fadiga', qtd)}
+        podeAjustar={podeAjustar?.('fadiga')}
+        onAjustar={(delta) => onAjustar('fadiga', delta)}
       />
     </div>
   )

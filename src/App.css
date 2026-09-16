@@ -492,7 +492,7 @@ input {
   color: var(--text);
 }
 
-.track-remover button {
+.track-botao {
   width: 18px;
   height: 18px;
   padding: 0;
@@ -503,9 +503,10 @@ input {
   background: transparent;
   color: var(--text);
   cursor: pointer;
+  flex-shrink: 0;
 }
 
-.track-remover button:disabled {
+.track-botao:disabled {
   opacity: 0.4;
   cursor: default;
 }
