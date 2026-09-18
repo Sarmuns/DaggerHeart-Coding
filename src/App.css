@@ -1016,3 +1016,229 @@ input {
   text-align: center;
   margin: 0;
 }
+
+/* Efeitos de Crítico — um dos 5 é sorteado por EfeitoCritico.jsx a cada
+   crítico (Esperança == Medo, ou nat 20). Overlay fixo por cima de tudo,
+   sem interceptar clique, some sozinho quando a animação termina. */
+.efeito-critico {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  pointer-events: none;
+}
+
+/* 1) Faíscas — estilhaços de brasa estourando do centro da tela. */
+.efeito-faiscas {
+  overflow: hidden;
+}
+
+.faisca {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  background: var(--accent);
+  box-shadow: 0 0 0 2px var(--primary);
+  transform: translate(-50%, -50%);
+  animation: faisca-estourar 900ms ease-out forwards;
+}
+
+@keyframes faisca-estourar {
+  0% {
+    transform: translate(-50%, -50%) rotate(var(--angulo)) translateX(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(var(--angulo)) translateX(var(--distancia)) scale(0.4);
+    opacity: 0;
+  }
+}
+
+/* 2) Tremor — sacode a página inteira (classe aplicada no <body> pelo
+   componente) e pulsa um flash vermelho nas bordas. */
+.tremor-tela {
+  animation: tremor-shake 500ms ease;
+}
+
+@keyframes tremor-shake {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  10% {
+    transform: translate(-6px, 3px);
+  }
+  20% {
+    transform: translate(5px, -4px);
+  }
+  30% {
+    transform: translate(-5px, 4px);
+  }
+  40% {
+    transform: translate(6px, -3px);
+  }
+  50% {
+    transform: translate(-4px, 2px);
+  }
+  60% {
+    transform: translate(4px, -2px);
+  }
+  70% {
+    transform: translate(-3px, 2px);
+  }
+  80% {
+    transform: translate(3px, -1px);
+  }
+  90% {
+    transform: translate(-2px, 1px);
+  }
+}
+
+.efeito-tremor-flash {
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(179, 67, 47, 0.4) 100%);
+  animation: tremor-flash 500ms ease-out forwards;
+}
+
+@keyframes tremor-flash {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* 3) Fenda — clarão branco/dourado com um raio rachando a tela. */
+.efeito-fenda {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff8ec;
+  animation: fenda-flash-bg 500ms ease-out forwards;
+}
+
+@keyframes fenda-flash-bg {
+  0% {
+    opacity: 0.85;
+  }
+  15% {
+    opacity: 0.1;
+  }
+  30% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.fenda-raio {
+  width: 60vmin;
+  height: 60vmin;
+  animation: fenda-raio-fade 700ms ease-out forwards;
+}
+
+.fenda-raio polyline {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-linejoin: miter;
+  filter: drop-shadow(0 0 6px var(--primary));
+}
+
+@keyframes fenda-raio-fade {
+  0% {
+    opacity: 1;
+    transform: scale(0.8);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.15);
+  }
+}
+
+/* 4) Selo — carimbo pixelado de "CRÍTICO!" batendo no centro da tela. */
+.efeito-selo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.selo-texto {
+  font-family: var(--heading);
+  font-size: 22px;
+  line-height: 1.6;
+  color: var(--text-h);
+  background: var(--primary);
+  border: 4px solid var(--accent);
+  padding: 16px 22px;
+  --notch: 8px;
+  clip-path: var(--clip-pixel);
+  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.6);
+  text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.6);
+  transform: scale(0) rotate(-10deg);
+  opacity: 0;
+  animation: selo-bater 1500ms cubic-bezier(0.2, 1.4, 0.4, 1) forwards;
+  @media (max-width: 1024px) {
+    font-size: 16px;
+    padding: 12px 16px;
+  }
+}
+
+@keyframes selo-bater {
+  0% {
+    transform: scale(0) rotate(-10deg);
+    opacity: 0;
+  }
+  20% {
+    transform: scale(1.2) rotate(4deg);
+    opacity: 1;
+  }
+  35% {
+    transform: scale(0.92) rotate(-2deg);
+  }
+  50% {
+    transform: scale(1.04) rotate(1deg);
+  }
+  65% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 0;
+  }
+}
+
+/* 5) Moedas — chuva de moedas pixeladas caindo do topo da tela. */
+.efeito-moedas {
+  overflow: hidden;
+}
+
+.moeda {
+  position: absolute;
+  top: -20px;
+  width: 10px;
+  height: 10px;
+  background: var(--accent);
+  border: 1.5px solid var(--primary-active);
+  animation-name: moeda-cair;
+  animation-timing-function: ease-in;
+  animation-fill-mode: forwards;
+}
+
+@keyframes moeda-cair {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(110vh) rotate(360deg);
+    opacity: 0.85;
+  }
+}

@@ -18,14 +18,16 @@ import {
 } from '../utils/mecanicaJogador'
 import { MARCADORES_PADRAO, marcadoresDoPresence } from '../utils/marcadoresJogador'
 import { carregarMarcadoresDoJogador, salvarMarcadoresDoJogador } from '../utils/marcadoresJogadorDb'
+import { ehCritico, sortearEfeitoCritico } from '../utils/efeitosCritico'
 import ColorSettingsPanel from './ColorSettingsPanel'
+import EfeitoCritico from './EfeitoCritico'
 import ModalStatus from './ModalStatus'
 import PlayerDiceSet from './PlayerDiceSet'
 
 const COR_CRITICO = '#aa3bff'
 const FUSO_BRASIL = 'America/Sao_Paulo'
 const DURACAO_RESULTADO_MS = 5000
-// Filtro de histórico por data já implementado, só escondido do front por
+// Filtro de histórico por data já implementado, só escondido do front por..
 // enquanto — trocar pra true reativa a UI sem precisar reescrever nada.
 const MOSTRAR_FILTRO_DATA = false
 
@@ -129,6 +131,13 @@ function Room({ sala, jogador, onAtualizarJogador }) {
   const [statusAberto, setStatusAberto] = useState(false)
   const [jogadoresOnline, setJogadoresOnline] = useState([])
   const [modoRolagem, setModoRolagem] = useState('normal') // 'normal' | 'vantagem' | 'desvantagem'
+  // Efeito visual sorteado a cada Crítico — { id, tipo } pra permitir tocar
+  // o mesmo tipo duas vezes seguidas (id novo força o React a remontar).
+  const [efeitoCritico, setEfeitoCritico] = useState(null)
+
+  function tocarEfeitoCritico(tipo) {
+    setEfeitoCritico({ id: crypto.randomUUID(), tipo })
+  }
   // Só quem tem a tag de DM pode alternar isso — pra todo mundo, fica fixo
   // no padrão (dualidade). O valor escolhido vai no presence pra quem mais
   // estiver na sala ver o dado certo do DM.
@@ -244,6 +253,9 @@ function Room({ sala, jogador, onAtualizarJogador }) {
         diceRefsRef.current
           .get(payload.presenceKey)
           ?.finalizarGiro(payload.hope, payload.fear, payload.modificador)
+        // O efeito de Crítico já vem sorteado por quem rolou — todo mundo na
+        // sala vê o mesmo efeito, não um sorteio independente por cliente.
+        if (payload.efeito) tocarEfeitoCritico(payload.efeito)
       })
       .on('presence', { event: 'sync' }, () => {
         const estado = canal.presenceState()
@@ -388,7 +400,7 @@ function Room({ sala, jogador, onAtualizarJogador }) {
     if (error) console.error('Erro ao registrar rolagem:', error)
   }
 
-  async function rolar() {
+  async function rolar(forcarValores) {
     const minhaChave = presenceKeyRef.current
     const meuConjunto = diceRefsRef.current.get(minhaChave)
     if (rolando || !meuConjunto) return
@@ -408,6 +420,8 @@ function Room({ sala, jogador, onAtualizarJogador }) {
     let resultadoBruto
     if (mecanica === MECANICA_D20) {
       resultadoBruto = await meuConjunto.rolarPropria(modoRolagem)
+    } else if (forcarValores) {
+      resultadoBruto = await meuConjunto.rolarPropriaParaValores(forcarValores.hope, forcarValores.fear, modoRolagem)
     } else if (jogador.nome === 'Samuel') {
       // Vantagem do Samuel: decide ANTES de girar se o resultado (que seria
       // "com Medo") vira "com Esperança" — 20% de chance, trocando qual
@@ -426,6 +440,7 @@ function Room({ sala, jogador, onAtualizarJogador }) {
     const { modificador } = resultadoBruto
     const { hope, fear } = resultadoBruto
     const resultado = mecanica === MECANICA_D20 ? calcularResultadoD20(hope, fear) : calcularResultado(hope, fear)
+    const efeito = ehCritico(resultado.vencedor) ? sortearEfeitoCritico() : null
 
     setUltimoResultado({ ...resultado, modificador })
     definirResultadoDoJogador(minhaChave, {
@@ -435,6 +450,7 @@ function Room({ sala, jogador, onAtualizarJogador }) {
       modificador,
     })
     setRolando(false)
+    if (efeito) tocarEfeitoCritico(efeito)
 
     canalRef.current?.send({
       type: 'broadcast',
@@ -445,6 +461,7 @@ function Room({ sala, jogador, onAtualizarJogador }) {
         hope: resultado.hope,
         fear: resultado.fear,
         modificador,
+        efeito,
       },
     })
 
@@ -601,9 +618,20 @@ function Room({ sala, jogador, onAtualizarJogador }) {
         </button>
       </div>
 
-      <button type="button" className="botao-rolar" onClick={rolar} disabled={rolando}>
+      <button type="button" className="botao-rolar" onClick={() => rolar()} disabled={rolando}>
         {rolando ? 'Rolando...' : 'Rolar'}
       </button>
+
+      {jogador.nome === 'Samuel' && minhaMecanica !== MECANICA_D20 && (
+        <button
+          type="button"
+          className="secundario"
+          onClick={() => rolar({ hope: 4, fear: 4 })}
+          disabled={rolando}
+        >
+          Forçar 4:4
+        </button>
+      )}
 
       {ultimoResultado && (
         <p
@@ -678,6 +706,10 @@ function Room({ sala, jogador, onAtualizarJogador }) {
           ))}
         </ul>
       </div>
+
+      {efeitoCritico && (
+        <EfeitoCritico key={efeitoCritico.id} tipo={efeitoCritico.tipo} onFim={() => setEfeitoCritico(null)} />
+      )}
     </section>
   )
 }
