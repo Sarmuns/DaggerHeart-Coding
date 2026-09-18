@@ -4,19 +4,12 @@
   --bg: #fff;
   --border: #e5e4e7;
   --code-bg: #f4f3ec;
-  --accent: #d6249f;
-  --accent-bg: rgba(214, 36, 159, 0.1);
-  --accent-border: rgba(214, 36, 159, 0.5);
+  --accent: #aa3bff;
+  --accent-bg: rgba(170, 59, 255, 0.1);
+  --accent-border: rgba(170, 59, 255, 0.5);
   --social-bg: rgba(244, 243, 236, 0.5);
   --shadow:
     rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
-
-  /* Design system "Instagram": gradiente da marca (amarelo -> laranja ->
-     rosa -> roxo -> azul) usado nos CTAs e destaques principais. */
-  --gradient-ig: linear-gradient(45deg, #feda75 0%, #fa7e1e 22%, #d62976 45%, #962fbf 68%, #4f5bd5 100%);
-  --shadow-ig: 0 8px 24px rgba(214, 36, 159, 0.28);
-  --radius-card: 18px;
-  --radius-pill: 999px;
 
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
   --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
@@ -44,13 +37,12 @@
     --bg: #16171d;
     --border: #2e303a;
     --code-bg: #1f2028;
-    --accent: #e1306c;
-    --accent-bg: rgba(225, 48, 108, 0.15);
-    --accent-border: rgba(225, 48, 108, 0.5);
+    --accent: #c084fc;
+    --accent-bg: rgba(192, 132, 252, 0.15);
+    --accent-border: rgba(192, 132, 252, 0.5);
     --social-bg: rgba(47, 48, 58, 0.5);
     --shadow:
       rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-    --shadow-ig: 0 8px 24px rgba(225, 48, 108, 0.35);
   }
 
   #social .button-icon {
@@ -60,10 +52,6 @@
 
 body {
   margin: 0;
-  background:
-    radial-gradient(circle at 15% -10%, rgba(254, 218, 117, 0.16), transparent 45%),
-    radial-gradient(circle at 85% 0%, rgba(150, 47, 191, 0.14), transparent 45%),
-    var(--bg);
 }
 
 #root {
@@ -86,15 +74,8 @@ h2 {
 
 h1 {
   font-size: 56px;
-  font-weight: 700;
-  line-height: 1.25;
   letter-spacing: -1.68px;
   margin: 32px 0;
-  background: var(--gradient-ig);
-  background-clip: text;
-  -webkit-background-clip: text;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
   @media (max-width: 1024px) {
     font-size: 36px;
     margin: 20px 0;

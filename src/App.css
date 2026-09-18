@@ -50,11 +50,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius-card);
+  border: 2px solid var(--border);
+  border-radius: 8px;
   padding: 10px 14px;
-  background: var(--bg);
-  box-shadow: var(--shadow);
 }
 
 .sala-item-codigo {
@@ -64,39 +62,25 @@
 
 button {
   font: inherit;
-  font-weight: 600;
   cursor: pointer;
-  border-radius: var(--radius-pill);
-  border: none;
-  background: var(--gradient-ig);
-  color: #fff;
-  padding: 10px 22px;
-  box-shadow: var(--shadow-ig);
-  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+  border-radius: 8px;
+  border: 2px solid var(--accent-border);
+  background: var(--accent-bg);
+  color: var(--accent);
+  padding: 10px 20px;
+  transition: border-color 0.2s;
 }
 button:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 28px rgba(214, 36, 159, 0.38);
-}
-button:active:not(:disabled) {
-  transform: translateY(0);
+  border-color: var(--accent);
 }
 button:disabled {
   cursor: default;
-  opacity: 0.5;
-  box-shadow: none;
+  opacity: 0.6;
 }
 button.secundario {
-  border: 1.5px solid var(--border);
+  border-color: var(--border);
   background: transparent;
   color: var(--text);
-  box-shadow: none;
-}
-button.secundario:hover:not(:disabled) {
-  border-color: var(--accent);
-  color: var(--accent);
-  box-shadow: none;
-  transform: none;
 }
 
 .form-sala,
@@ -161,14 +145,11 @@ input {
   border: 1.5px solid var(--border);
   background: transparent;
   color: var(--text);
-  box-shadow: none;
 }
 
 .nome-opcao.selecionada {
-  border: 1.5px solid transparent;
-  background: linear-gradient(var(--bg), var(--bg)) padding-box, var(--gradient-ig) border-box;
+  border-color: var(--accent);
   color: var(--accent);
-  font-weight: 700;
 }
 
 .color-input-controles {
@@ -211,7 +192,7 @@ input {
   width: 100%;
   box-sizing: border-box;
   padding: 8px 14px;
-  border-radius: 12px;
+  border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--code-bg);
   font-size: 13px;
@@ -242,10 +223,8 @@ input {
   font-weight: 500;
   font-size: 32px;
   letter-spacing: -0.6px;
-  margin: 4px 0;
-  background: none;
   color: var(--text-h);
-  -webkit-text-fill-color: currentColor;
+  margin: 4px 0;
 }
 
 .sala-subtitulo {
@@ -268,10 +247,9 @@ input {
   flex-direction: column;
   gap: 14px;
   padding: 16px;
-  border-radius: var(--radius-card);
+  border-radius: 12px;
   border: 1px solid var(--border);
   background: var(--code-bg);
-  box-shadow: var(--shadow);
   text-align: left;
 }
 
@@ -312,10 +290,9 @@ input {
   flex-direction: column;
   gap: 14px;
   padding: 20px;
-  border-radius: var(--radius-card);
+  border-radius: 12px;
   border: 1px solid var(--border);
   background: var(--code-bg);
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.3);
   text-align: left;
 }
 
@@ -422,7 +399,7 @@ input {
   max-width: 220px;
   padding: 8px 10px;
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 10px;
 }
 
 .marcador {
@@ -589,16 +566,12 @@ input {
   gap: 8px;
   min-width: 210px;
   border: 2px solid var(--border);
-  border-radius: var(--radius-card);
+  border-radius: 12px;
   padding: 12px 16px;
-  background: var(--bg);
-  box-shadow: var(--shadow);
 }
 
 .conjunto-dados--voce {
-  border: 2px solid transparent;
-  background: linear-gradient(var(--bg), var(--bg)) padding-box, var(--gradient-ig) border-box;
-  box-shadow: var(--shadow-ig);
+  border-color: var(--accent);
 }
 
 .conjunto-dados-nome {
@@ -764,15 +737,11 @@ input {
   background: transparent;
   color: var(--text);
   font-size: 13px;
-  font-weight: 500;
-  box-shadow: none;
 }
 
 .pill--ativa {
-  border: 1.5px solid transparent;
-  background: linear-gradient(var(--bg), var(--bg)) padding-box, var(--gradient-ig) border-box;
+  border-color: var(--accent);
   color: var(--accent);
-  font-weight: 700;
 }
 
 .botao-rolar {
@@ -914,7 +883,7 @@ input {
   justify-content: space-between;
   gap: 8px;
   padding: 8px 12px;
-  border-radius: 12px;
+  border-radius: 8px;
   border: 1px solid var(--border);
   font-size: 14px;
 }
@@ -939,7 +908,7 @@ input {
   display: flex;
   flex-direction: column;
   border: 2px solid var(--border);
-  border-radius: var(--radius-card);
+  border-radius: 12px;
   background: var(--bg);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
   overflow: hidden;
