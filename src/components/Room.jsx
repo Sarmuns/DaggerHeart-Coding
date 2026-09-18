@@ -622,7 +622,12 @@ function Room({ sala, jogador, onAtualizarJogador }) {
       <div className="historico">
         <div className="historico-cabecalho">
           <h2>Histórico</h2>
-          <button type="button" className="secundario" onClick={resetarHistorico}>
+          <button
+            type="button"
+            className="secundario"
+            onClick={resetarHistorico}
+            disabled={jogador.nome !== 'Samuel'}
+          >
             Resetar
           </button>
         </div>
