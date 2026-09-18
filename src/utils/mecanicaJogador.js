@@ -1,11 +1,11 @@
+import { NOMES_DM } from './jogadores'
+
 export const MECANICA_DUALIDADE = 'dualidade'
 export const MECANICA_D20 = 'd20'
 
 // Jogadores com a tag de DM ganham o d20 como dado padrão, mas podem
 // trocar pra 2d12 (dualidade) a qualquer momento pelo toggle na sala.
-// Único lugar que precisa mudar pra dar/tirar a tag de DM de alguém.
-const NOMES_DM = ['Gabriel']
-
+// Quem é DM se gerencia em utils/jogadores.js.
 export function ehDM(nome) {
   return NOMES_DM.includes(nome)
 }

@@ -1,4 +1,4 @@
-import { NOMES_JOGADORES } from '../utils/nomes'
+import { NOMES_JOGADORES } from '../utils/jogadores'
 
 function NomePicklist({ label, nomeSelecionado, onSelecionar, nomesOcupados = [] }) {
   return (
