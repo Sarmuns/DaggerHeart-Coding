@@ -1,1 +1,1 @@
-export const NOMES_JOGADORES = ['Rafa', 'Gabriel', 'Adriano', 'Samuel']
+export const NOMES_JOGADORES = ['Rafa', 'Gabriel', 'Adriano', 'Samuel', 'Vini']
