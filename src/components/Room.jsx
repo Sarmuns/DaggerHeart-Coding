@@ -508,9 +508,6 @@ function Room({ sala, jogador, onAtualizarJogador }) {
           onAtualizarJogador={onAtualizarJogador}
           onSalvarMarcadores={salvarMarcadoresCompletos}
           onFechar={() => setPainelAberto(false)}
-          coresOcupadas={jogadoresOnline
-            .filter((jg) => jg.presenceKey !== presenceKeyRef.current)
-            .map((jg) => jg.cor)}
         />
       )}
 

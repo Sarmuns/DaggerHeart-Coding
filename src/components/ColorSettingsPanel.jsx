@@ -7,7 +7,6 @@ import {
 } from '../utils/estiloPadraoDados'
 import { MECANICA_D20, mecanicaDoJogador } from '../utils/mecanicaJogador'
 import { TEMA_PADRAO } from '../utils/temasDados'
-import ColorSwatchPicker from './ColorSwatchPicker'
 import DiceColorModal from './DiceColorModal'
 import MarcadoresModal from './MarcadoresModal'
 
@@ -18,7 +17,6 @@ function ColorSettingsPanel({
   onAtualizarJogador,
   onSalvarMarcadores,
   onFechar,
-  coresOcupadas = [],
 }) {
   const [modalAberto, setModalAberto] = useState(null) // 'hope' | 'fear' | 'marcadores' | null
   const ehD20 = (mecanica ?? mecanicaDoJogador(jogador.nome)) === MECANICA_D20
@@ -33,15 +31,9 @@ function ColorSettingsPanel({
       </div>
 
       <p className="config-painel-nome">
-        Jogando como <strong>{jogador.nome}</strong>
+        Jogando como{' '}
+        <strong style={{ color: jogador.cor }}>{jogador.nome}</strong>
       </p>
-
-      <ColorSwatchPicker
-        label="Sua cor"
-        corSelecionada={jogador.cor}
-        onSelecionar={(cor) => onAtualizarJogador({ cor })}
-        coresOcupadas={coresOcupadas}
-      />
 
       <div className="home-botoes">
         <button type="button" onClick={() => setModalAberto('hope')}>

@@ -1,27 +1,23 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { CORES, primeiraCorLivre } from '../utils/cores'
 import {
   ESTILO_PADRAO_D20,
   ESTILO_PADRAO_D20_EXTRA,
   ESTILO_PADRAO_FEAR,
   ESTILO_PADRAO_HOPE,
 } from '../utils/estiloPadraoDados'
+import { corDoJogador } from '../utils/jogadores'
 import { MECANICA_D20, mecanicaDoJogador } from '../utils/mecanicaJogador'
 import { carregarPreferenciasJogador, salvarPreferenciasJogador } from '../utils/preferenciasJogador'
 import { carregarEstiloDoJogador, salvarEstiloDoJogador } from '../utils/preferenciasJogadorDb'
-import ColorSwatchPicker from './ColorSwatchPicker'
 import DiceColorModal from './DiceColorModal'
 import NomePicklist from './NomePicklist'
-
-const COR_PADRAO = CORES[0].valor
 
 function PlayerSetup({ codigoSala, roomId, onConfirmar }) {
   const nomeLembrado = carregarPreferenciasJogador()?.nome ?? ''
   const canalRef = useRef(null)
 
   const [nome, setNome] = useState('')
-  const [cor, setCor] = useState(COR_PADRAO)
   const [corHope, setCorHope] = useState(ESTILO_PADRAO_HOPE.corFundo)
   const [corFear, setCorFear] = useState(ESTILO_PADRAO_FEAR.corFundo)
   const [corTextoHope, setCorTextoHope] = useState(ESTILO_PADRAO_HOPE.corTexto)
@@ -40,7 +36,6 @@ function PlayerSetup({ codigoSala, roomId, onConfirmar }) {
   const [temaD20Extra, setTemaD20Extra] = useState(ESTILO_PADRAO_D20_EXTRA.tema)
   const [modalAberto, setModalAberto] = useState(null) // 'hope' | 'fear' | null
   const [nomesOcupados, setNomesOcupados] = useState([])
-  const [coresOcupadas, setCoresOcupadas] = useState([])
   const [erro, setErro] = useState('')
   const [verificando, setVerificando] = useState(false)
 
@@ -53,7 +48,6 @@ function PlayerSetup({ codigoSala, roomId, onConfirmar }) {
         const estado = canal.presenceState()
         const metasAtuais = Object.values(estado).map((metas) => metas[metas.length - 1]).filter(Boolean)
         setNomesOcupados(metasAtuais.map((m) => m.nome).filter(Boolean))
-        setCoresOcupadas(metasAtuais.map((m) => m.cor).filter(Boolean))
       })
       .subscribe()
 
@@ -65,22 +59,12 @@ function PlayerSetup({ codigoSala, roomId, onConfirmar }) {
     }
   }, [roomId])
 
-  // Se a cor atual (padrão ou vinda do estilo salvo) já estiver em uso por
-  // outro jogador na sala, troca sozinho pra primeira livre da paleta.
-  useEffect(() => {
-    if (coresOcupadas.includes(cor)) {
-      setCor(primeiraCorLivre(coresOcupadas))
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [coresOcupadas])
-
   useEffect(() => {
     if (nomeLembrado) selecionarNome(nomeLembrado)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   function aplicarEstiloPadrao() {
-    setCor(primeiraCorLivre(coresOcupadas, COR_PADRAO))
     setCorHope(ESTILO_PADRAO_HOPE.corFundo)
     setCorFear(ESTILO_PADRAO_FEAR.corFundo)
     setCorTextoHope(ESTILO_PADRAO_HOPE.corTexto)
@@ -107,7 +91,6 @@ function PlayerSetup({ codigoSala, roomId, onConfirmar }) {
     // um nome escolhido antes, pra não "vazar" cor de um jogador pro outro.
     const estiloSalvo = await carregarEstiloDoJogador(novoNome)
     if (estiloSalvo) {
-      setCor(primeiraCorLivre(coresOcupadas, estiloSalvo.cor))
       setCorHope(estiloSalvo.corHope)
       setCorFear(estiloSalvo.corFear)
       setCorTextoHope(estiloSalvo.corTextoHope)
@@ -150,7 +133,7 @@ function PlayerSetup({ codigoSala, roomId, onConfirmar }) {
 
     const jogador = {
       nome,
-      cor,
+      cor: corDoJogador(nome),
       corHope,
       corFear,
       corTextoHope,
@@ -182,13 +165,6 @@ function PlayerSetup({ codigoSala, roomId, onConfirmar }) {
           nomeSelecionado={nome}
           onSelecionar={selecionarNome}
           nomesOcupados={nomesOcupados}
-        />
-
-        <ColorSwatchPicker
-          label="Sua cor"
-          corSelecionada={cor}
-          onSelecionar={setCor}
-          coresOcupadas={coresOcupadas}
         />
 
         <div className="home-botoes">
