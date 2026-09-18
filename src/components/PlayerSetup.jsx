@@ -7,10 +7,8 @@ import {
   ESTILO_PADRAO_HOPE,
 } from '../utils/estiloPadraoDados'
 import { corDoJogador } from '../utils/jogadores'
-import { MECANICA_D20, mecanicaDoJogador } from '../utils/mecanicaJogador'
 import { carregarPreferenciasJogador, salvarPreferenciasJogador } from '../utils/preferenciasJogador'
 import { carregarEstiloDoJogador, salvarEstiloDoJogador } from '../utils/preferenciasJogadorDb'
-import DiceColorModal from './DiceColorModal'
 import NomePicklist from './NomePicklist'
 
 function PlayerSetup({ codigoSala, roomId, onConfirmar }) {
@@ -34,12 +32,9 @@ function PlayerSetup({ codigoSala, roomId, onConfirmar }) {
   const [corTextoD20Extra, setCorTextoD20Extra] = useState(ESTILO_PADRAO_D20_EXTRA.corTexto)
   const [corBordaD20Extra, setCorBordaD20Extra] = useState(ESTILO_PADRAO_D20_EXTRA.corBorda)
   const [temaD20Extra, setTemaD20Extra] = useState(ESTILO_PADRAO_D20_EXTRA.tema)
-  const [modalAberto, setModalAberto] = useState(null) // 'hope' | 'fear' | null
   const [nomesOcupados, setNomesOcupados] = useState([])
   const [erro, setErro] = useState('')
   const [verificando, setVerificando] = useState(false)
-
-  const ehD20 = mecanicaDoJogador(nome) === MECANICA_D20
 
   useEffect(() => {
     const canal = supabase.channel(`room:${roomId}`)
@@ -167,90 +162,11 @@ function PlayerSetup({ codigoSala, roomId, onConfirmar }) {
           nomesOcupados={nomesOcupados}
         />
 
-        <div className="home-botoes">
-          <button type="button" onClick={() => setModalAberto('hope')}>
-            {ehD20 ? 'Dado d20' : 'Dado de Esperança'}
-          </button>
-          <button type="button" onClick={() => setModalAberto('fear')}>
-            {ehD20 ? 'Dado d20 extra' : 'Dado de Medo'}
-          </button>
-        </div>
-
         {erro && <p className="erro">{erro}</p>}
         <button type="submit" disabled={verificando}>
           {verificando ? 'Verificando...' : 'Entrar na sala'}
         </button>
       </form>
-
-      {modalAberto === 'hope' &&
-        (ehD20 ? (
-          <DiceColorModal
-            titulo="Dado d20"
-            corFundo={corD20}
-            corBorda={corBordaD20}
-            corTexto={corTextoD20}
-            tema={temaD20}
-            padrao={ESTILO_PADRAO_D20}
-            onAplicar={({ corFundo, corBorda, corTexto, tema }) => {
-              setCorD20(corFundo)
-              setCorBordaD20(corBorda)
-              setCorTextoD20(corTexto)
-              setTemaD20(tema)
-            }}
-            onFechar={() => setModalAberto(null)}
-          />
-        ) : (
-          <DiceColorModal
-            titulo="Dado de Esperança"
-            corFundo={corHope}
-            corBorda={corBordaHope}
-            corTexto={corTextoHope}
-            tema={temaHope}
-            padrao={ESTILO_PADRAO_HOPE}
-            onAplicar={({ corFundo, corBorda, corTexto, tema }) => {
-              setCorHope(corFundo)
-              setCorBordaHope(corBorda)
-              setCorTextoHope(corTexto)
-              setTemaHope(tema)
-            }}
-            onFechar={() => setModalAberto(null)}
-          />
-        ))}
-
-      {modalAberto === 'fear' &&
-        (ehD20 ? (
-          <DiceColorModal
-            titulo="Dado d20 extra (vantagem/desvantagem)"
-            corFundo={corD20Extra}
-            corBorda={corBordaD20Extra}
-            corTexto={corTextoD20Extra}
-            tema={temaD20Extra}
-            padrao={ESTILO_PADRAO_D20_EXTRA}
-            onAplicar={({ corFundo, corBorda, corTexto, tema }) => {
-              setCorD20Extra(corFundo)
-              setCorBordaD20Extra(corBorda)
-              setCorTextoD20Extra(corTexto)
-              setTemaD20Extra(tema)
-            }}
-            onFechar={() => setModalAberto(null)}
-          />
-        ) : (
-          <DiceColorModal
-            titulo="Dado de Medo"
-            corFundo={corFear}
-            corBorda={corBordaFear}
-            corTexto={corTextoFear}
-            tema={temaFear}
-            padrao={ESTILO_PADRAO_FEAR}
-            onAplicar={({ corFundo, corBorda, corTexto, tema }) => {
-              setCorFear(corFundo)
-              setCorBordaFear(corBorda)
-              setCorTextoFear(corTexto)
-              setTemaFear(tema)
-            }}
-            onFechar={() => setModalAberto(null)}
-          />
-        ))}
     </section>
   )
 }
