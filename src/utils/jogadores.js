@@ -6,6 +6,7 @@ export const JOGADORES = [
   { nome: 'Adriano' },
   { nome: 'Samuel' },
   { nome: 'Vini' },
+  { nome: 'Ranny' },
 ]
 
 export const NOMES_JOGADORES = JOGADORES.map((j) => j.nome)
