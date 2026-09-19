@@ -22,31 +22,35 @@ function ColorSettingsPanel({
   const ehD20 = (mecanica ?? mecanicaDoJogador(jogador.nome)) === MECANICA_D20
 
   return (
-    <div className="config-painel">
-      <div className="config-painel-header">
-        <h2>Suas configurações</h2>
-        <button type="button" className="secundario" onClick={onFechar} aria-label="Fechar">
-          ✕
-        </button>
+    <>
+      <div className="modal-fundo" onClick={onFechar}>
+        <div className="config-painel" onClick={(e) => e.stopPropagation()}>
+          <div className="config-painel-header">
+            <h2>Suas configurações</h2>
+            <button type="button" className="secundario" onClick={onFechar} aria-label="Fechar">
+              ✕
+            </button>
+          </div>
+
+          <p className="config-painel-nome">
+            Jogando como{' '}
+            <strong style={{ color: jogador.cor }}>{jogador.nome}</strong>
+          </p>
+
+          <div className="home-botoes">
+            <button type="button" onClick={() => setModalAberto('hope')}>
+              {ehD20 ? 'Dado d20' : 'Dado de Esperança'}
+            </button>
+            <button type="button" onClick={() => setModalAberto('fear')}>
+              {ehD20 ? 'Dado d20 extra' : 'Dado de Medo'}
+            </button>
+          </div>
+
+          <button type="button" onClick={() => setModalAberto('marcadores')}>
+            Marcadores do Personagem
+          </button>
+        </div>
       </div>
-
-      <p className="config-painel-nome">
-        Jogando como{' '}
-        <strong style={{ color: jogador.cor }}>{jogador.nome}</strong>
-      </p>
-
-      <div className="home-botoes">
-        <button type="button" onClick={() => setModalAberto('hope')}>
-          {ehD20 ? 'Dado d20' : 'Dado de Esperança'}
-        </button>
-        <button type="button" onClick={() => setModalAberto('fear')}>
-          {ehD20 ? 'Dado d20 extra' : 'Dado de Medo'}
-        </button>
-      </div>
-
-      <button type="button" onClick={() => setModalAberto('marcadores')}>
-        Marcadores do Personagem
-      </button>
 
       {modalAberto === 'hope' &&
         (ehD20 ? (
@@ -134,7 +138,7 @@ function ColorSettingsPanel({
           onFechar={() => setModalAberto(null)}
         />
       )}
-    </div>
+    </>
   )
 }
 

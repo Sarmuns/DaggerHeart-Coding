@@ -20,7 +20,6 @@ import { MARCADORES_PADRAO, marcadoresDoPresence } from '../utils/marcadoresJoga
 import { carregarMarcadoresDoJogador, salvarMarcadoresDoJogador } from '../utils/marcadoresJogadorDb'
 import { ehCritico, sortearEfeitoCritico } from '../utils/efeitosCritico'
 import ColorSettingsPanel from './ColorSettingsPanel'
-import EfeitoCritico from './EfeitoCritico'
 import ModalStatus from './ModalStatus'
 import PlayerDiceSet from './PlayerDiceSet'
 
@@ -131,12 +130,13 @@ function Room({ sala, jogador, onAtualizarJogador }) {
   const [statusAberto, setStatusAberto] = useState(false)
   const [jogadoresOnline, setJogadoresOnline] = useState([])
   const [modoRolagem, setModoRolagem] = useState('normal') // 'normal' | 'vantagem' | 'desvantagem'
-  // Efeito visual sorteado a cada Crítico — { id, tipo } pra permitir tocar
-  // o mesmo tipo duas vezes seguidas (id novo força o React a remontar).
+  // Efeito visual sorteado a cada Crítico — { id, tipo, presenceKey } pra
+  // permitir tocar o mesmo tipo duas vezes seguidas (id novo força o React a
+  // remontar) e ancorar o efeito na caixa de quem rolou.
   const [efeitoCritico, setEfeitoCritico] = useState(null)
 
-  function tocarEfeitoCritico(tipo) {
-    setEfeitoCritico({ id: crypto.randomUUID(), tipo })
+  function tocarEfeitoCritico(tipo, presenceKey) {
+    setEfeitoCritico({ id: crypto.randomUUID(), tipo, presenceKey })
   }
   // Só quem tem a tag de DM pode alternar isso — pra todo mundo, fica fixo
   // no padrão (dualidade). O valor escolhido vai no presence pra quem mais
@@ -255,7 +255,7 @@ function Room({ sala, jogador, onAtualizarJogador }) {
           ?.finalizarGiro(payload.hope, payload.fear, payload.modificador)
         // O efeito de Crítico já vem sorteado por quem rolou — todo mundo na
         // sala vê o mesmo efeito, não um sorteio independente por cliente.
-        if (payload.efeito) tocarEfeitoCritico(payload.efeito)
+        if (payload.efeito) tocarEfeitoCritico(payload.efeito, payload.presenceKey)
       })
       .on('presence', { event: 'sync' }, () => {
         const estado = canal.presenceState()
@@ -450,7 +450,7 @@ function Room({ sala, jogador, onAtualizarJogador }) {
       modificador,
     })
     setRolando(false)
-    if (efeito) tocarEfeitoCritico(efeito)
+    if (efeito) tocarEfeitoCritico(efeito, minhaChave)
 
     canalRef.current?.send({
       type: 'broadcast',
@@ -561,6 +561,8 @@ function Room({ sala, jogador, onAtualizarJogador }) {
               editavelMarcadores={souEu}
               podeAjustarMarcador={podeAjustarMarcador}
               onAjustarMarcador={ajustarMarcador}
+              efeitoCritico={efeitoCritico?.presenceKey === jg.presenceKey ? efeitoCritico : null}
+              onFimEfeitoCritico={() => setEfeitoCritico(null)}
             />
           )
         })}
@@ -707,9 +709,6 @@ function Room({ sala, jogador, onAtualizarJogador }) {
         </ul>
       </div>
 
-      {efeitoCritico && (
-        <EfeitoCritico key={efeitoCritico.id} tipo={efeitoCritico.tipo} onFim={() => setEfeitoCritico(null)} />
-      )}
     </section>
   )
 }

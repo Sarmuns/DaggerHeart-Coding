@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 
 // Duração de cada efeito — precisa bater com a animação CSS mais longa de
 // cada um (App.css), senão a Room desmonta o componente antes de terminar.
@@ -28,20 +28,35 @@ function gerarMoedas(n) {
   }))
 }
 
-function EfeitoCritico({ tipo, onFim }) {
+function EfeitoCritico({ tipo, onFim, caixaRef }) {
+  // Guarda a versão mais recente de onFim numa ref pra não precisar dela nas
+  // deps do efeito abaixo — Room re-renderiza por outros motivos (presence
+  // sync etc.) e recria essa função a cada vez, o que resetava o timer antes
+  // dele completar.
+  const onFimRef = useRef(onFim)
+  onFimRef.current = onFim
+
   useEffect(() => {
     const duracao = DURACAO_MS[tipo] ?? 1200
-    const id = setTimeout(onFim, duracao)
+    const id = setTimeout(() => onFimRef.current(), duracao)
     return () => clearTimeout(id)
-  }, [tipo, onFim])
-
-  // Tremor sacode a página inteira via classe no <body> — o overlay do
-  // efeito em si só cuida do flash de impacto.
-  useEffect(() => {
-    if (tipo !== 'tremor') return
-    document.body.classList.add('tremor-tela')
-    return () => document.body.classList.remove('tremor-tela')
   }, [tipo])
+
+  // Todo crítico sacode a caixa de quem rolou — pelo menos esse tremidão
+  // sempre acontece, além do efeito visual específico sorteado. "Tremor" tem
+  // uma classe mais forte/mais longa; os outros ganham um tremidão leve.
+  useEffect(() => {
+    const el = caixaRef?.current
+    if (!el) return
+    const classe = tipo === 'tremor' ? 'caixa-tremor-forte' : 'caixa-tremor-leve'
+    const duracao = tipo === 'tremor' ? 500 : 350
+    el.classList.add(classe)
+    const id = setTimeout(() => el.classList.remove(classe), duracao)
+    return () => {
+      clearTimeout(id)
+      el.classList.remove(classe)
+    }
+  }, [tipo, caixaRef])
 
   const faiscas = useMemo(() => gerarFaiscas(14), [])
   const moedas = useMemo(() => gerarMoedas(10), [])

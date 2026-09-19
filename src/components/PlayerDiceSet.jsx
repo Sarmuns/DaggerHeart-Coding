@@ -1,5 +1,6 @@
 import { DiceRoller } from '@gnuton/css-dice-roller'
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
+import EfeitoCritico from './EfeitoCritico'
 import { PipsJogador, ResumoLinha } from './FichaJogador'
 import { MECANICA_D20 } from '../utils/mecanicaJogador'
 import { TEMA_PADRAO } from '../utils/temasDados'
@@ -41,10 +42,13 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
     editavelMarcadores,
     podeAjustarMarcador,
     onAjustarMarcador,
+    efeitoCritico,
+    onFimEfeitoCritico,
   },
   ref,
 ) {
   const ehD20 = mecanica === MECANICA_D20
+  const caixaRef = useRef(null)
   const palcoHopeRef = useRef(null)
   const palcoFearRef = useRef(null)
   const palcoModRef = useRef(null)
@@ -364,7 +368,15 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
   }))
 
   return (
-    <div className={`conjunto-dados${destaque ? ' conjunto-dados--voce' : ''}`}>
+    <div ref={caixaRef} className={`conjunto-dados${destaque ? ' conjunto-dados--voce' : ''}`}>
+      {efeitoCritico && (
+        <EfeitoCritico
+          key={efeitoCritico.id}
+          tipo={efeitoCritico.tipo}
+          caixaRef={caixaRef}
+          onFim={onFimEfeitoCritico}
+        />
+      )}
       <span className="conjunto-dados-nome" style={{ color: cor }}>
         {nome}
       </span>
