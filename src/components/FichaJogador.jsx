@@ -109,7 +109,7 @@ function LinhaTrack({ label, valor, max, editavel, podeAjustar, onAjustar }) {
             title={podeAjustar ? `Remover ${label.toLowerCase()}` : 'Espera o cooldown acabar'}
             onClick={() => onAjustar(-quantidade)}
           >
-            −
+            -
           </button>
           <input
             type="number"
