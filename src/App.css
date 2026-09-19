@@ -599,6 +599,16 @@ input {
   cursor: default;
 }
 
+/* O "-" ganha reação própria no hover — gelo e encolhendo, pra não virar o
+   mesmo vermelho genérico de botão (que parecia um "+" de tão parecido). O
+   "+" continua usando o hover padrão, sem mexer. */
+.track-botao:not(.track-botao--somar):hover:not(:disabled) {
+  background: #3e6f9e;
+  border-color: #2d5478;
+  color: #eaf2fb;
+  transform: scale(0.82) rotate(-6deg);
+}
+
 .pip--cheio {
   background: var(--accent);
   border-color: var(--accent);
