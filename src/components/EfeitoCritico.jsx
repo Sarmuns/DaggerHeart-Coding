@@ -3,19 +3,19 @@ import { useEffect, useMemo, useRef } from 'react'
 // Duração de cada efeito — precisa bater com a animação CSS mais longa de
 // cada um (App.css), senão a Room desmonta o componente antes de terminar.
 const DURACAO_MS = {
-  faiscas: 1100,
+  faiscas: 1400,
   tremor: 650,
   fenda: 700,
   selo: 1500,
-  moedas: 1500,
+  moedas: 2800,
 }
 
 function gerarFaiscas(n) {
   return Array.from({ length: n }, (_, i) => ({
     id: `faisca-${i}`,
     angulo: (360 / n) * i + (Math.random() * 20 - 10),
-    distancia: 70 + Math.random() * 50,
-    atraso: Math.random() * 120,
+    distancia: 95 + Math.random() * 65,
+    atraso: Math.random() * 100,
   }))
 }
 
@@ -23,8 +23,8 @@ function gerarMoedas(n) {
   return Array.from({ length: n }, (_, i) => ({
     id: `moeda-${i}`,
     esquerda: 4 + Math.random() * 92,
-    atraso: Math.random() * 300,
-    duracao: 800 + Math.random() * 400,
+    atraso: Math.random() * 2200,
+    duracao: 900 + Math.random() * 500,
   }))
 }
 
@@ -58,12 +58,13 @@ function EfeitoCritico({ tipo, onFim, caixaRef }) {
     }
   }, [tipo, caixaRef])
 
-  const faiscas = useMemo(() => gerarFaiscas(14), [])
-  const moedas = useMemo(() => gerarMoedas(10), [])
+  const faiscas = useMemo(() => gerarFaiscas(22), [])
+  const moedas = useMemo(() => gerarMoedas(16), [])
 
   if (tipo === 'faiscas') {
     return (
       <div className="efeito-critico efeito-faiscas" aria-hidden="true">
+        <span className="faiscas-flash" />
         {faiscas.map((p) => (
           <span
             key={p.id}
