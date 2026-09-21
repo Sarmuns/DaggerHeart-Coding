@@ -2,52 +2,52 @@ import { useState } from 'react'
 
 const HEX_REGEX = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/
 
-function normalizarHex(valor) {
-  let v = valor.trim()
+function normalizeHex(value) {
+  let v = value.trim()
   if (v && !v.startsWith('#')) v = `#${v}`
   return v
 }
 
 function ColorInput({ label, value, onChange }) {
-  const [texto, setTexto] = useState(value)
-  const [erro, setErro] = useState(false)
+  const [text, setText] = useState(value)
+  const [hasError, setHasError] = useState(false)
 
-  function aplicarTexto(v) {
-    setTexto(v)
-    const normalizado = normalizarHex(v)
-    if (HEX_REGEX.test(normalizado)) {
-      setErro(false)
-      onChange(normalizado)
+  function applyText(v) {
+    setText(v)
+    const normalized = normalizeHex(v)
+    if (HEX_REGEX.test(normalized)) {
+      setHasError(false)
+      onChange(normalized)
     } else {
-      setErro(true)
+      setHasError(true)
     }
   }
 
-  function aplicarPicker(v) {
-    setTexto(v)
-    setErro(false)
+  function applyPicker(v) {
+    setText(v)
+    setHasError(false)
     onChange(v)
   }
 
   return (
     <label className="color-input">
       {label}
-      <div className="color-input-controles">
+      <div className="color-input-controls">
         <input
           type="color"
-          value={HEX_REGEX.test(normalizarHex(texto)) ? normalizarHex(texto) : value}
-          onChange={(e) => aplicarPicker(e.target.value)}
+          value={HEX_REGEX.test(normalizeHex(text)) ? normalizeHex(text) : value}
+          onChange={(e) => applyPicker(e.target.value)}
         />
         <input
           type="text"
-          className={erro ? 'campo-erro' : ''}
-          value={texto}
-          onChange={(e) => aplicarTexto(e.target.value)}
+          className={hasError ? 'field-error' : ''}
+          value={text}
+          onChange={(e) => applyText(e.target.value)}
           placeholder="#rrggbb"
           maxLength={7}
         />
       </div>
-      {erro && <span className="erro">Hex inválido</span>}
+      {hasError && <span className="error">Hex inválido</span>}
     </label>
   )
 }

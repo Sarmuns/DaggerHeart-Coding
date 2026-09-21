@@ -1,460 +1,459 @@
 import { DiceRoller } from '@gnuton/css-dice-roller'
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
-import EfeitoCritico from './EfeitoCritico'
-import { PipsJogador, ResumoLinha } from './FichaJogador'
-import { MECANICA_D20 } from '../utils/mecanicaJogador'
-import { TEMA_PADRAO } from '../utils/temasDados'
+import CriticalEffect from './CriticalEffect'
+import { PlayerPips, SummaryRow } from './PlayerSheet'
+import { DICE_SYSTEM_D20 } from '../utils/diceSystem'
+import { DEFAULT_THEME } from '../utils/diceThemes'
 
 const STAGGER_FEAR_MS = 60
-const VELOCIDADE_ROLAGEM_S = 2
-const ESCALA_DADO = 92
-const ESCALA_DADO_D20 = 106
-const ESCALA_DADO_MODIFICADOR = 60
-const COR_MODIFICADOR_FUNDO = '#5b5b5b'
-const COR_MODIFICADOR_BORDA = '#2a2a2a'
-const COR_MODIFICADOR_TEXTO = '#ffffff'
+const ROLL_SPEED_S = 2
+const DIE_SCALE = 92
+const DIE_SCALE_D20 = 106
+const DIE_SCALE_MODIFIER = 60
+const MODIFIER_BACKGROUND_COLOR = '#5b5b5b'
+const MODIFIER_BORDER_COLOR = '#2a2a2a'
+const MODIFIER_TEXT_COLOR = '#ffffff'
 
-function prefereMenosMovimento() {
+function prefersReducedMotion() {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches
 }
 
 const PlayerDiceSet = forwardRef(function PlayerDiceSet(
   {
-    nome,
-    cor,
-    // "Principal" e "secundária" são os dois slots de dado do conjunto:
-    // Esperança/Medo na mecânica dualidade, ou d20/d20-extra na mecânica
-    // d20 — cada mecânica manda seus próprios campos de estilo, nunca
-    // compartilhados entre si.
-    corPrincipal,
-    corSecundaria,
-    corTextoPrincipal,
-    corTextoSecundaria,
-    corBordaPrincipal,
-    corBordaSecundaria,
-    temaPrincipal,
-    temaSecundaria,
-    mecanica,
-    destaque,
-    resultadoTexto,
-    resultadoCor,
-    marcadores,
-    editavelMarcadores,
-    podeAjustarMarcador,
-    onAjustarMarcador,
-    efeitoCritico,
-    onFimEfeitoCritico,
-    onRolar,
-    rolando,
+    name,
+    color,
+    // "Primary" and "secondary" are the two die slots of the set: Hope/Fear
+    // on the duality system, or d20/extra-d20 on the d20 system — each
+    // system sends its own style fields, never shared between them.
+    primaryColor,
+    secondaryColor,
+    primaryTextColor,
+    secondaryTextColor,
+    primaryBorderColor,
+    secondaryBorderColor,
+    primaryTheme,
+    secondaryTheme,
+    diceSystem,
+    isYou,
+    resultText,
+    resultColor,
+    stats,
+    statsEditable,
+    canAdjustStat,
+    onAdjustStat,
+    criticalEffect,
+    onCriticalEffectEnd,
+    onRoll,
+    rolling,
   },
   ref,
 ) {
-  const ehD20 = mecanica === MECANICA_D20
-  const caixaRef = useRef(null)
-  const palcoHopeRef = useRef(null)
-  const palcoFearRef = useRef(null)
-  const palcoModRef = useRef(null)
-  const rollerHopeRef = useRef(null)
-  const rollerFearRef = useRef(null)
-  const rollerModRef = useRef(null)
-  const dieHopeRef = useRef(null)
-  const dieFearRef = useRef(null)
-  const dieModRef = useRef(null)
-  const giroEmAndamentoRef = useRef(null)
-  const giroModEmAndamentoRef = useRef(null)
-  const [girandoHope, setGirandoHope] = useState(false)
-  const [girandoFear, setGirandoFear] = useState(false)
-  const [girandoMod, setGirandoMod] = useState(false)
-  const [modificadorVisivel, setModificadorVisivel] = useState(false)
+  const isD20 = diceSystem === DICE_SYSTEM_D20
+  const boxRef = useRef(null)
+  const hopeStageRef = useRef(null)
+  const fearStageRef = useRef(null)
+  const modStageRef = useRef(null)
+  const hopeRollerRef = useRef(null)
+  const fearRollerRef = useRef(null)
+  const modRollerRef = useRef(null)
+  const hopeDieRef = useRef(null)
+  const fearDieRef = useRef(null)
+  const modDieRef = useRef(null)
+  const spinInProgressRef = useRef(null)
+  const modSpinInProgressRef = useRef(null)
+  const [hopeSpinning, setHopeSpinning] = useState(false)
+  const [fearSpinning, setFearSpinning] = useState(false)
+  const [modSpinning, setModSpinning] = useState(false)
+  const [modifierVisible, setModifierVisible] = useState(false)
 
   useEffect(() => {
-    const tipoDado = ehD20 ? 'd20' : 'd12'
-    const escala = ehD20 ? ESCALA_DADO_D20 : ESCALA_DADO
+    const dieType = isD20 ? 'd20' : 'd12'
+    const scale = isD20 ? DIE_SCALE_D20 : DIE_SCALE
 
-    const rollerHope = new DiceRoller(palcoHopeRef.current, escala)
-    const [dieHope] = rollerHope.addDie(tipoDado)
-    rollerHope.updateSettings({
-      baseColor: corPrincipal,
-      textColor: corTextoPrincipal,
-      secondaryColor: corBordaPrincipal,
-      theme: temaPrincipal ?? TEMA_PADRAO,
-      speed: VELOCIDADE_ROLAGEM_S,
+    const hopeRoller = new DiceRoller(hopeStageRef.current, scale)
+    const [hopeDie] = hopeRoller.addDie(dieType)
+    hopeRoller.updateSettings({
+      baseColor: primaryColor,
+      textColor: primaryTextColor,
+      secondaryColor: primaryBorderColor,
+      theme: primaryTheme ?? DEFAULT_THEME,
+      speed: ROLL_SPEED_S,
     })
-    rollerHopeRef.current = rollerHope
-    dieHopeRef.current = dieHope
+    hopeRollerRef.current = hopeRoller
+    hopeDieRef.current = hopeDie
 
-    const rollerFear = new DiceRoller(palcoFearRef.current, escala)
-    const [dieFear] = rollerFear.addDie(tipoDado)
-    rollerFear.updateSettings({
-      baseColor: corSecundaria,
-      textColor: corTextoSecundaria,
-      secondaryColor: corBordaSecundaria,
-      theme: temaSecundaria ?? TEMA_PADRAO,
-      speed: VELOCIDADE_ROLAGEM_S,
+    const fearRoller = new DiceRoller(fearStageRef.current, scale)
+    const [fearDie] = fearRoller.addDie(dieType)
+    fearRoller.updateSettings({
+      baseColor: secondaryColor,
+      textColor: secondaryTextColor,
+      secondaryColor: secondaryBorderColor,
+      theme: secondaryTheme ?? DEFAULT_THEME,
+      speed: ROLL_SPEED_S,
     })
-    rollerFearRef.current = rollerFear
-    dieFearRef.current = dieFear
+    fearRollerRef.current = fearRoller
+    fearDieRef.current = fearDie
 
-    let rollerMod = null
-    if (!ehD20) {
-      rollerMod = new DiceRoller(palcoModRef.current, ESCALA_DADO_MODIFICADOR)
-      const [dieMod] = rollerMod.addDie('d6')
-      rollerMod.updateSettings({
-        baseColor: COR_MODIFICADOR_FUNDO,
-        secondaryColor: COR_MODIFICADOR_BORDA,
-        textColor: COR_MODIFICADOR_TEXTO,
+    let modRoller = null
+    if (!isD20) {
+      modRoller = new DiceRoller(modStageRef.current, DIE_SCALE_MODIFIER)
+      const [modDie] = modRoller.addDie('d6')
+      modRoller.updateSettings({
+        baseColor: MODIFIER_BACKGROUND_COLOR,
+        secondaryColor: MODIFIER_BORDER_COLOR,
+        textColor: MODIFIER_TEXT_COLOR,
         theme: 'theme-solid',
-        speed: VELOCIDADE_ROLAGEM_S,
+        speed: ROLL_SPEED_S,
       })
-      rollerModRef.current = rollerMod
-      dieModRef.current = dieMod
+      modRollerRef.current = modRoller
+      modDieRef.current = modDie
     }
 
     return () => {
-      rollerHope.clear()
-      rollerFear.clear()
-      rollerMod?.clear()
-      rollerHopeRef.current = null
-      rollerFearRef.current = null
-      rollerModRef.current = null
-      dieHopeRef.current = null
-      dieFearRef.current = null
-      dieModRef.current = null
+      hopeRoller.clear()
+      fearRoller.clear()
+      modRoller?.clear()
+      hopeRollerRef.current = null
+      fearRollerRef.current = null
+      modRollerRef.current = null
+      hopeDieRef.current = null
+      fearDieRef.current = null
+      modDieRef.current = null
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ehD20])
+  }, [isD20])
 
   useEffect(() => {
-    rollerHopeRef.current?.updateSettings({ baseColor: corPrincipal })
-  }, [corPrincipal])
+    hopeRollerRef.current?.updateSettings({ baseColor: primaryColor })
+  }, [primaryColor])
 
   useEffect(() => {
-    rollerFearRef.current?.updateSettings({ baseColor: corSecundaria })
-  }, [corSecundaria])
+    fearRollerRef.current?.updateSettings({ baseColor: secondaryColor })
+  }, [secondaryColor])
 
   useEffect(() => {
-    rollerHopeRef.current?.updateSettings({ textColor: corTextoPrincipal })
-  }, [corTextoPrincipal])
+    hopeRollerRef.current?.updateSettings({ textColor: primaryTextColor })
+  }, [primaryTextColor])
 
   useEffect(() => {
-    rollerFearRef.current?.updateSettings({ textColor: corTextoSecundaria })
-  }, [corTextoSecundaria])
+    fearRollerRef.current?.updateSettings({ textColor: secondaryTextColor })
+  }, [secondaryTextColor])
 
   useEffect(() => {
-    rollerHopeRef.current?.updateSettings({ secondaryColor: corBordaPrincipal })
-  }, [corBordaPrincipal])
+    hopeRollerRef.current?.updateSettings({ secondaryColor: primaryBorderColor })
+  }, [primaryBorderColor])
 
   useEffect(() => {
-    rollerFearRef.current?.updateSettings({ secondaryColor: corBordaSecundaria })
-  }, [corBordaSecundaria])
+    fearRollerRef.current?.updateSettings({ secondaryColor: secondaryBorderColor })
+  }, [secondaryBorderColor])
 
   useEffect(() => {
-    rollerHopeRef.current?.updateSettings({ theme: temaPrincipal ?? TEMA_PADRAO })
-  }, [temaPrincipal])
+    hopeRollerRef.current?.updateSettings({ theme: primaryTheme ?? DEFAULT_THEME })
+  }, [primaryTheme])
 
   useEffect(() => {
-    rollerFearRef.current?.updateSettings({ theme: temaSecundaria ?? TEMA_PADRAO })
-  }, [temaSecundaria])
+    fearRollerRef.current?.updateSettings({ theme: secondaryTheme ?? DEFAULT_THEME })
+  }, [secondaryTheme])
 
-  // Gira um dado até um valor já decidido, sem nunca revelar o valor
-  // aleatório "de verdade" primeiro — usado pela vantagem do Samuel, pra
-  // trocar hope/fear ser imperceptível (sem o dado mostrar um número e
-  // "piscar" pra outro logo em seguida).
-  async function girarParaValor(dieRef, alvo) {
+  // Spins a die to an already-decided value, never revealing the "real"
+  // random value first — used by Samuel's advantage, to make the hope/fear
+  // swap imperceptible (the die never shows a number and then "jumps" to
+  // another one right after).
+  async function spinToValue(dieRef, target) {
     const die = dieRef.current
     if (die.settings.animation === 'none') {
-      die.setResult(alvo)
-      return alvo
+      die.setResult(target)
+      return target
     }
     die.element.style.setProperty('--dice-animation-name', `roll-${die.settings.animation}`)
     die.element.classList.add('is-rolling')
-    await new Promise((resolver) => setTimeout(resolver, die.settings.speed * 1000))
+    await new Promise((resolve) => setTimeout(resolve, die.settings.speed * 1000))
     die.element.classList.remove('is-rolling')
-    die.setResult(alvo)
-    return alvo
+    die.setResult(target)
+    return target
   }
 
-  async function animarParParaValores(hopeAlvo, fearAlvo) {
-    const reduzido = prefereMenosMovimento()
-    rollerHopeRef.current.updateSettings({ animation: reduzido ? 'none' : 'float' })
-    rollerFearRef.current.updateSettings({ animation: reduzido ? 'none' : 'float' })
+  async function spinPairToValues(hopeTarget, fearTarget) {
+    const reduced = prefersReducedMotion()
+    hopeRollerRef.current.updateSettings({ animation: reduced ? 'none' : 'float' })
+    fearRollerRef.current.updateSettings({ animation: reduced ? 'none' : 'float' })
 
-    if (reduzido) {
-      dieHopeRef.current.setResult(hopeAlvo)
-      dieFearRef.current.setResult(fearAlvo)
-      return [hopeAlvo, fearAlvo]
+    if (reduced) {
+      hopeDieRef.current.setResult(hopeTarget)
+      fearDieRef.current.setResult(fearTarget)
+      return [hopeTarget, fearTarget]
     }
 
-    setGirandoHope(true)
-    setGirandoFear(true)
+    setHopeSpinning(true)
+    setFearSpinning(true)
 
-    const hopePromise = girarParaValor(dieHopeRef, hopeAlvo).then((valor) => {
-      setGirandoHope(false)
-      return valor
+    const hopePromise = spinToValue(hopeDieRef, hopeTarget).then((value) => {
+      setHopeSpinning(false)
+      return value
     })
 
-    await new Promise((resolver) => setTimeout(resolver, STAGGER_FEAR_MS))
+    await new Promise((resolve) => setTimeout(resolve, STAGGER_FEAR_MS))
 
-    const fearPromise = girarParaValor(dieFearRef, fearAlvo).then((valor) => {
-      setGirandoFear(false)
-      return valor
+    const fearPromise = spinToValue(fearDieRef, fearTarget).then((value) => {
+      setFearSpinning(false)
+      return value
     })
 
     return Promise.all([hopePromise, fearPromise])
   }
 
-  async function animarPar() {
-    const reduzido = prefereMenosMovimento()
-    rollerHopeRef.current.updateSettings({ animation: reduzido ? 'none' : 'float' })
-    rollerFearRef.current.updateSettings({ animation: reduzido ? 'none' : 'float' })
+  async function spinPair() {
+    const reduced = prefersReducedMotion()
+    hopeRollerRef.current.updateSettings({ animation: reduced ? 'none' : 'float' })
+    fearRollerRef.current.updateSettings({ animation: reduced ? 'none' : 'float' })
 
-    if (reduzido) {
-      const hope = await dieHopeRef.current.roll()
-      const fear = await dieFearRef.current.roll()
+    if (reduced) {
+      const hope = await hopeDieRef.current.roll()
+      const fear = await fearDieRef.current.roll()
       return [hope, fear]
     }
 
-    setGirandoHope(true)
-    setGirandoFear(true)
+    setHopeSpinning(true)
+    setFearSpinning(true)
 
-    const hopePromise = dieHopeRef.current.roll().then((valor) => {
-      setGirandoHope(false)
-      return valor
+    const hopePromise = hopeDieRef.current.roll().then((value) => {
+      setHopeSpinning(false)
+      return value
     })
 
-    await new Promise((resolver) => setTimeout(resolver, STAGGER_FEAR_MS))
+    await new Promise((resolve) => setTimeout(resolve, STAGGER_FEAR_MS))
 
-    const fearPromise = dieFearRef.current.roll().then((valor) => {
-      setGirandoFear(false)
-      return valor
+    const fearPromise = fearDieRef.current.roll().then((value) => {
+      setFearSpinning(false)
+      return value
     })
 
     return Promise.all([hopePromise, fearPromise])
   }
 
-  async function animarModificador() {
-    const reduzido = prefereMenosMovimento()
-    rollerModRef.current.updateSettings({ animation: reduzido ? 'none' : 'float' })
-    setGirandoMod(true)
-    const valor = await dieModRef.current.roll()
-    setGirandoMod(false)
-    return valor
+  async function spinModifier() {
+    const reduced = prefersReducedMotion()
+    modRollerRef.current.updateSettings({ animation: reduced ? 'none' : 'float' })
+    setModSpinning(true)
+    const value = await modDieRef.current.roll()
+    setModSpinning(false)
+    return value
   }
 
-  // Mecânica dualidade (2d12: Esperança/Medo + d6 opcional de vantagem/desvantagem)
-  async function rolarDualidade(modo) {
-    setModificadorVisivel(modo !== 'normal')
-    const principalPromise = animarPar()
-    const modificadorPromise = modo !== 'normal' ? animarModificador() : null
+  // Duality system (2d12: Hope/Fear + optional advantage/disadvantage d6)
+  async function rollDuality(mode) {
+    setModifierVisible(mode !== 'normal')
+    const primaryPromise = spinPair()
+    const modifierPromise = mode !== 'normal' ? spinModifier() : null
 
-    const [hope, fear] = await principalPromise
-    const valorModificador = modificadorPromise ? await modificadorPromise : null
+    const [hope, fear] = await primaryPromise
+    const modifierValue = modifierPromise ? await modifierPromise : null
 
     return {
       hope,
       fear,
-      modificador: valorModificador === null ? null : { tipo: modo, valor: valorModificador },
+      modifier: modifierValue === null ? null : { type: mode, value: modifierValue },
     }
   }
 
-  // Igual rolarDualidade, mas os dados já giram direto pro valor final
-  // definido por fora (hope/fear já decididos, incluindo qualquer troca de
-  // vantagem) — nunca mostra um valor "de verdade" pra depois substituir.
-  async function rolarDualidadeParaValores(hopeAlvo, fearAlvo, modo) {
-    setModificadorVisivel(modo !== 'normal')
-    const principalPromise = animarParParaValores(hopeAlvo, fearAlvo)
-    const modificadorPromise = modo !== 'normal' ? animarModificador() : null
+  // Same as rollDuality, but the dice spin straight to the final value
+  // decided outside (hope/fear already resolved, including any advantage
+  // swap) — never shows a "real" value only to replace it.
+  async function rollDualityToValues(hopeTarget, fearTarget, mode) {
+    setModifierVisible(mode !== 'normal')
+    const primaryPromise = spinPairToValues(hopeTarget, fearTarget)
+    const modifierPromise = mode !== 'normal' ? spinModifier() : null
 
-    const [hope, fear] = await principalPromise
-    const valorModificador = modificadorPromise ? await modificadorPromise : null
+    const [hope, fear] = await primaryPromise
+    const modifierValue = modifierPromise ? await modifierPromise : null
 
     return {
       hope,
       fear,
-      modificador: valorModificador === null ? null : { tipo: modo, valor: valorModificador },
+      modifier: modifierValue === null ? null : { type: mode, value: modifierValue },
     }
   }
 
-  // Mecânica d20 (estilo D&D): normal rola só 1 dado; vantagem/desvantagem
-  // rolam 2 (reaproveitando o slot do "fear" como o d20 extra) e ficam com
-  // o maior/menor.
-  async function rolarD20(modo) {
-    const reduzido = prefereMenosMovimento()
-    rollerHopeRef.current.updateSettings({ animation: reduzido ? 'none' : 'float' })
+  // d20 system (D&D-style): normal rolls just 1 die; advantage/disadvantage
+  // roll 2 (reusing the "fear" slot as the extra d20) and keep the
+  // higher/lower.
+  async function rollD20(mode) {
+    const reduced = prefersReducedMotion()
+    hopeRollerRef.current.updateSettings({ animation: reduced ? 'none' : 'float' })
 
-    if (modo === 'normal') {
-      setModificadorVisivel(false)
-      setGirandoHope(true)
-      const valor = await dieHopeRef.current.roll()
-      setGirandoHope(false)
-      return { hope: valor, fear: valor, modificador: null }
+    if (mode === 'normal') {
+      setModifierVisible(false)
+      setHopeSpinning(true)
+      const value = await hopeDieRef.current.roll()
+      setHopeSpinning(false)
+      return { hope: value, fear: value, modifier: null }
     }
 
-    setModificadorVisivel(true)
-    rollerFearRef.current.updateSettings({ animation: reduzido ? 'none' : 'float' })
-    setGirandoHope(true)
-    setGirandoFear(true)
+    setModifierVisible(true)
+    fearRollerRef.current.updateSettings({ animation: reduced ? 'none' : 'float' })
+    setHopeSpinning(true)
+    setFearSpinning(true)
 
-    const v1Promise = dieHopeRef.current.roll().then((valor) => {
-      setGirandoHope(false)
-      return valor
+    const v1Promise = hopeDieRef.current.roll().then((value) => {
+      setHopeSpinning(false)
+      return value
     })
 
-    await new Promise((resolver) => setTimeout(resolver, STAGGER_FEAR_MS))
+    await new Promise((resolve) => setTimeout(resolve, STAGGER_FEAR_MS))
 
-    const v2Promise = dieFearRef.current.roll().then((valor) => {
-      setGirandoFear(false)
-      return valor
+    const v2Promise = fearDieRef.current.roll().then((value) => {
+      setFearSpinning(false)
+      return value
     })
 
     const [v1, v2] = await Promise.all([v1Promise, v2Promise])
-    const mantido = modo === 'vantagem' ? Math.max(v1, v2) : Math.min(v1, v2)
-    const descartado = mantido === v1 ? v2 : v1
+    const kept = mode === 'vantagem' ? Math.max(v1, v2) : Math.min(v1, v2)
+    const discarded = kept === v1 ? v2 : v1
 
-    return { hope: mantido, fear: descartado, modificador: { tipo: modo, valor: null } }
+    return { hope: kept, fear: discarded, modifier: { type: mode, value: null } }
   }
 
-  // Versão "muda" das animações acima, usada só pra espelhar visualmente a
-  // rolagem de outro jogador — o valor real chega depois via finalizarGiro.
-  async function iniciarAnimacaoRemota(modo) {
-    if (ehD20) {
-      const reduzido = prefereMenosMovimento()
-      rollerHopeRef.current.updateSettings({ animation: reduzido ? 'none' : 'float' })
-      if (modo === 'normal') return animarD20SoDado(dieHopeRef, setGirandoHope)
-      rollerFearRef.current.updateSettings({ animation: reduzido ? 'none' : 'float' })
-      const p1 = animarD20SoDado(dieHopeRef, setGirandoHope)
-      await new Promise((resolver) => setTimeout(resolver, STAGGER_FEAR_MS))
-      const p2 = animarD20SoDado(dieFearRef, setGirandoFear)
+  // "Silent" version of the animations above, only used to mirror another
+  // player's roll — the real value arrives later via finishSpin.
+  async function startRemoteAnimation(mode) {
+    if (isD20) {
+      const reduced = prefersReducedMotion()
+      hopeRollerRef.current.updateSettings({ animation: reduced ? 'none' : 'float' })
+      if (mode === 'normal') return spinD20DieOnly(hopeDieRef, setHopeSpinning)
+      fearRollerRef.current.updateSettings({ animation: reduced ? 'none' : 'float' })
+      const p1 = spinD20DieOnly(hopeDieRef, setHopeSpinning)
+      await new Promise((resolve) => setTimeout(resolve, STAGGER_FEAR_MS))
+      const p2 = spinD20DieOnly(fearDieRef, setFearSpinning)
       return Promise.all([p1, p2])
     }
 
-    giroModEmAndamentoRef.current = modo !== 'normal' ? animarModificador() : null
-    return animarPar()
+    modSpinInProgressRef.current = mode !== 'normal' ? spinModifier() : null
+    return spinPair()
   }
 
-  async function animarD20SoDado(dieRef, setGirando) {
-    setGirando(true)
-    const valor = await dieRef.current.roll()
-    setGirando(false)
-    return valor
+  async function spinD20DieOnly(dieRef, setSpinning) {
+    setSpinning(true)
+    const value = await dieRef.current.roll()
+    setSpinning(false)
+    return value
   }
 
   useImperativeHandle(ref, () => ({
-    async rolarPropria(modo = 'normal') {
-      return ehD20 ? rolarD20(modo) : rolarDualidade(modo)
+    async rollOwn(mode = 'normal') {
+      return isD20 ? rollD20(mode) : rollDuality(mode)
     },
-    async rolarPropriaParaValores(hopeAlvo, fearAlvo, modo = 'normal') {
-      return rolarDualidadeParaValores(hopeAlvo, fearAlvo, modo)
+    async rollOwnToValues(hopeTarget, fearTarget, mode = 'normal') {
+      return rollDualityToValues(hopeTarget, fearTarget, mode)
     },
-    iniciarGiro(modo = 'normal') {
-      setModificadorVisivel(modo !== 'normal')
-      giroEmAndamentoRef.current = iniciarAnimacaoRemota(modo)
+    startSpin(mode = 'normal') {
+      setModifierVisible(mode !== 'normal')
+      spinInProgressRef.current = startRemoteAnimation(mode)
     },
-    async finalizarGiro(hope, fear, modificador) {
-      if (giroEmAndamentoRef.current) {
-        await giroEmAndamentoRef.current
-        giroEmAndamentoRef.current = null
+    async finishSpin(hope, fear, modifier) {
+      if (spinInProgressRef.current) {
+        await spinInProgressRef.current
+        spinInProgressRef.current = null
       }
-      dieHopeRef.current.setResult(hope)
-      dieFearRef.current.setResult(fear)
+      hopeDieRef.current.setResult(hope)
+      fearDieRef.current.setResult(fear)
 
-      if (!ehD20 && modificador) {
-        setModificadorVisivel(true)
-        if (giroModEmAndamentoRef.current) {
-          await giroModEmAndamentoRef.current
-          giroModEmAndamentoRef.current = null
+      if (!isD20 && modifier) {
+        setModifierVisible(true)
+        if (modSpinInProgressRef.current) {
+          await modSpinInProgressRef.current
+          modSpinInProgressRef.current = null
         }
-        dieModRef.current.setResult(modificador.valor)
+        modDieRef.current.setResult(modifier.value)
       }
     },
   }))
 
   return (
-    <div ref={caixaRef} className={`conjunto-dados${destaque ? ' conjunto-dados--voce' : ''}`}>
-      {efeitoCritico && (
-        <EfeitoCritico
-          key={efeitoCritico.id}
-          tipo={efeitoCritico.tipo}
-          caixaRef={caixaRef}
-          onFim={onFimEfeitoCritico}
+    <div ref={boxRef} className={`dice-set${isYou ? ' dice-set--you' : ''}`}>
+      {criticalEffect && (
+        <CriticalEffect
+          key={criticalEffect.id}
+          type={criticalEffect.type}
+          boxRef={boxRef}
+          onEnd={onCriticalEffectEnd}
         />
       )}
-      <span className="conjunto-dados-nome" style={{ color: cor }}>
-        {nome}
+      <span className="dice-set-name" style={{ color }}>
+        {name}
       </span>
-      {marcadores && <ResumoLinha nome={nome} marcadores={marcadores} />}
-      <div className="dados">
-        <div className="dado-estagio">
-          <span className="dado-label" style={{ color: corPrincipal }}>
-            {ehD20 ? 'd20' : 'Esperança'}
+      {stats && <SummaryRow name={name} stats={stats} />}
+      <div className="dice-row">
+        <div className="die-stage">
+          <span className="die-label" style={{ color: primaryColor }}>
+            {isD20 ? 'd20' : 'Esperança'}
           </span>
           <div
-            ref={palcoHopeRef}
-            className={`dado-palco${girandoHope ? ' dado-palco--rolando' : ''}`}
+            ref={hopeStageRef}
+            className={`die-platform${hopeSpinning ? ' die-platform--rolling' : ''}`}
           />
         </div>
-        {ehD20 ? (
+        {isD20 ? (
           <div
-            className={`dado-estagio${modificadorVisivel ? '' : ' dado-estagio--oculto'}`}
+            className={`die-stage${modifierVisible ? '' : ' die-stage--hidden'}`}
           >
-            <span className="dado-label" style={{ color: corSecundaria }}>
+            <span className="die-label" style={{ color: secondaryColor }}>
               d20 extra
             </span>
             <div
-              ref={palcoFearRef}
-              className={`dado-palco${girandoFear ? ' dado-palco--rolando' : ''}`}
+              ref={fearStageRef}
+              className={`die-platform${fearSpinning ? ' die-platform--rolling' : ''}`}
             />
           </div>
         ) : (
-          <div className="dado-estagio">
-            <span className="dado-label" style={{ color: corSecundaria }}>
+          <div className="die-stage">
+            <span className="die-label" style={{ color: secondaryColor }}>
               Medo
             </span>
             <div
-              ref={palcoFearRef}
-              className={`dado-palco${girandoFear ? ' dado-palco--rolando' : ''}`}
+              ref={fearStageRef}
+              className={`die-platform${fearSpinning ? ' die-platform--rolling' : ''}`}
             />
           </div>
         )}
-        {!ehD20 && (
+        {!isD20 && (
           <div
-            className={`dado-estagio dado-estagio--modificador${modificadorVisivel ? '' : ' dado-estagio--oculto'}`}
+            className={`die-stage die-stage--modifier${modifierVisible ? '' : ' die-stage--hidden'}`}
           >
-            <span className="dado-label">d6</span>
+            <span className="die-label">d6</span>
             <div
-              ref={palcoModRef}
-              className={`dado-palco dado-palco--pequeno${girandoMod ? ' dado-palco--rolando' : ''}`}
+              ref={modStageRef}
+              className={`die-platform die-platform--small${modSpinning ? ' die-platform--rolling' : ''}`}
             />
           </div>
         )}
       </div>
-      {marcadores && (
-        <PipsJogador
-          nome={nome}
-          marcadores={marcadores}
-          editavel={editavelMarcadores}
-          podeAjustar={podeAjustarMarcador}
-          onAjustar={onAjustarMarcador}
+      {stats && (
+        <PlayerPips
+          name={name}
+          stats={stats}
+          editable={statsEditable}
+          canAdjust={canAdjustStat}
+          onAdjust={onAdjustStat}
         />
       )}
-      {onRolar && (
+      {onRoll && (
         <button
           type="button"
-          className="botao-rolar-discreto"
-          onClick={onRolar}
-          disabled={rolando}
+          className="roll-button-discreet"
+          onClick={onRoll}
+          disabled={rolling}
           title="Rolar"
           aria-label="Rolar"
         >
-          {rolando ? '...' : '🎲 Rolar'}
+          {rolling ? '...' : '🎲 Rolar'}
         </button>
       )}
-      {resultadoTexto && (
+      {resultText && (
         <p
-          className={`conjunto-dados-resultado${ehD20 ? ' conjunto-dados-resultado--d20' : ''}`}
-          style={{ color: resultadoCor }}
+          className={`dice-set-result${isD20 ? ' dice-set-result--d20' : ''}`}
+          style={{ color: resultColor }}
         >
-          {resultadoTexto}
+          {resultText}
         </p>
       )}
     </div>

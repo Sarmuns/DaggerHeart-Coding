@@ -2,69 +2,69 @@ import { useEffect, useState } from 'react'
 import bcrypt from 'bcryptjs'
 import { supabase } from '../lib/supabase'
 
-const CODIGO_SALA_TESTE = 'TESTE'
+const TEST_ROOM_CODE = 'TESTE'
 
-async function garantirSalaTeste() {
-  const { data: existente } = await supabase
+async function ensureTestRoom() {
+  const { data: existing } = await supabase
     .from('rooms')
     .select('id, codigo, criada_em')
-    .eq('codigo', CODIGO_SALA_TESTE)
+    .eq('codigo', TEST_ROOM_CODE)
     .maybeSingle()
 
-  if (existente) return existente
+  if (existing) return existing
 
-  const senhaHash = await bcrypt.hash(crypto.randomUUID(), 10)
+  const passwordHash = await bcrypt.hash(crypto.randomUUID(), 10)
   const { data, error } = await supabase
     .from('rooms')
-    .insert({ codigo: CODIGO_SALA_TESTE, senha_hash: senhaHash })
+    .insert({ codigo: TEST_ROOM_CODE, senha_hash: passwordHash })
     .select('id, codigo, criada_em')
     .single()
 
   if (!error) return data
 
-  // outro cliente pode ter criado a sala nesse meio tempo
+  // another client may have created the room in the meantime
   const { data: retry } = await supabase
     .from('rooms')
     .select('id, codigo, criada_em')
-    .eq('codigo', CODIGO_SALA_TESTE)
+    .eq('codigo', TEST_ROOM_CODE)
     .maybeSingle()
   return retry
 }
 
-function Home({ onEntrarSala }) {
-  const [salas, setSalas] = useState([])
-  const [carregando, setCarregando] = useState(true)
-  const [erro, setErro] = useState('')
+function Home({ onJoinRoom }) {
+  const [rooms, setRooms] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
   useEffect(() => {
-    let ativo = true
+    let active = true
 
-    async function carregar() {
+    async function loadRooms() {
       try {
-        await garantirSalaTeste()
+        await ensureTestRoom()
         const { data, error } = await supabase
           .from('rooms')
           .select('id, codigo, criada_em')
           .order('criada_em', { ascending: true })
 
-        if (!ativo) return
+        if (!active) return
         if (error) throw error
-        setSalas(data ?? [])
+        setRooms(data ?? [])
       } catch {
-        if (ativo) setErro('Não foi possível carregar as salas.')
+        if (active) setError('Não foi possível carregar as salas.')
       } finally {
-        if (ativo) setCarregando(false)
+        if (active) setLoading(false)
       }
     }
 
-    carregar()
+    loadRooms()
     return () => {
-      ativo = false
+      active = false
     }
   }, [])
 
-  function entrarNaSala(sala) {
-    onEntrarSala({ codigo: sala.codigo, roomId: sala.id })
+  function handleJoinRoom(room) {
+    onJoinRoom({ code: room.codigo, roomId: room.id })
   }
 
   return (
@@ -72,16 +72,16 @@ function Home({ onEntrarSala }) {
       <h1>Duality Dice</h1>
       <p>Rolagem de Esperança e Medo do Daggerheart, em tempo real.</p>
 
-      <div className="lista-salas">
+      <div className="room-list">
         <h2>Salas disponíveis</h2>
-        {carregando && <p>Carregando salas...</p>}
-        {erro && <p className="erro">{erro}</p>}
-        {!carregando && !erro && (
+        {loading && <p>Carregando salas...</p>}
+        {error && <p className="error">{error}</p>}
+        {!loading && !error && (
           <ul>
-            {salas.map((sala) => (
-              <li key={sala.id} className="sala-item">
-                <span className="sala-item-codigo">{sala.codigo}</span>
-                <button type="button" onClick={() => entrarNaSala(sala)}>
+            {rooms.map((room) => (
+              <li key={room.id} className="room-item">
+                <span className="room-item-code">{room.codigo}</span>
+                <button type="button" onClick={() => handleJoinRoom(room)}>
                   Entrar
                 </button>
               </li>
@@ -90,7 +90,7 @@ function Home({ onEntrarSala }) {
         )}
       </div>
 
-      <div className="home-botoes">
+      <div className="home-actions">
         <button type="button" disabled title="Em breve">
           Criar sala
         </button>

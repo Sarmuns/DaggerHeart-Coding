@@ -2,38 +2,36 @@ import { useState } from 'react'
 import Home from './components/Home'
 import PlayerSetup from './components/PlayerSetup'
 import Room from './components/Room'
-import { salvarPreferenciasJogador } from './utils/preferenciasJogador'
-import { salvarEstiloDoJogador } from './utils/preferenciasJogadorDb'
+import { savePlayerPreferences } from './utils/playerPreferences'
+import { savePlayerStyle } from './utils/playerPreferencesDb'
 import './App.css'
 
 function App() {
-  const [sala, setSala] = useState(null) // { codigo, senha, roomId }
-  const [jogador, setJogador] = useState(null) // { nome, cor, corHope, corFear, corTextoHope, corTextoFear }
+  const [room, setRoom] = useState(null) // { code, roomId }
+  const [player, setPlayer] = useState(null) // { name, color, hopeColor, fearColor, hopeTextColor, fearTextColor, ... }
 
-  function entrarSala(dados) {
-    setSala(dados)
+  function joinRoom(data) {
+    setRoom(data)
   }
 
-  function atualizarJogador(campos) {
-    setJogador((atual) => {
-      const novoJogador = { ...atual, ...campos }
-      salvarPreferenciasJogador(novoJogador)
-      salvarEstiloDoJogador(novoJogador)
-      return novoJogador
+  function updatePlayer(fields) {
+    setPlayer((current) => {
+      const newPlayer = { ...current, ...fields }
+      savePlayerPreferences(newPlayer)
+      savePlayerStyle(newPlayer)
+      return newPlayer
     })
   }
 
-  if (!sala) {
-    return <Home onEntrarSala={entrarSala} />
+  if (!room) {
+    return <Home onJoinRoom={joinRoom} />
   }
 
-  if (!jogador) {
-    return <PlayerSetup codigoSala={sala.codigo} roomId={sala.roomId} onConfirmar={setJogador} />
+  if (!player) {
+    return <PlayerSetup roomCode={room.code} roomId={room.roomId} onConfirm={setPlayer} />
   }
 
-  return (
-    <Room sala={sala} jogador={jogador} onAtualizarJogador={atualizarJogador} />
-  )
+  return <Room room={room} player={player} onUpdatePlayer={updatePlayer} />
 }
 
 export default App

@@ -1,142 +1,121 @@
 import { useState } from 'react'
 import {
-  ESTILO_PADRAO_D20,
-  ESTILO_PADRAO_D20_EXTRA,
-  ESTILO_PADRAO_FEAR,
-  ESTILO_PADRAO_HOPE,
-} from '../utils/estiloPadraoDados'
-import { MECANICA_D20, mecanicaDoJogador } from '../utils/mecanicaJogador'
-import { TEMA_PADRAO } from '../utils/temasDados'
+  DEFAULT_D20_STYLE,
+  DEFAULT_D20_EXTRA_STYLE,
+  DEFAULT_FEAR_STYLE,
+  DEFAULT_HOPE_STYLE,
+} from '../utils/defaultDiceStyles'
+import { DICE_SYSTEM_D20, defaultDiceSystemFor } from '../utils/diceSystem'
+import { DEFAULT_THEME } from '../utils/diceThemes'
 import DiceColorModal from './DiceColorModal'
-import MarcadoresModal from './MarcadoresModal'
+import Modal from './Modal'
+import StatsModal from './StatsModal'
 
-function ColorSettingsPanel({
-  jogador,
-  mecanica,
-  marcadores,
-  onAtualizarJogador,
-  onSalvarMarcadores,
-  onFechar,
-}) {
-  const [modalAberto, setModalAberto] = useState(null) // 'hope' | 'fear' | 'marcadores' | null
-  const ehD20 = (mecanica ?? mecanicaDoJogador(jogador.nome)) === MECANICA_D20
+function ColorSettingsPanel({ player, diceSystem, stats, onUpdatePlayer, onSaveStats, onClose }) {
+  const [openModal, setOpenModal] = useState(null) // 'hope' | 'fear' | 'stats' | null
+  const isD20 = (diceSystem ?? defaultDiceSystemFor(player.name)) === DICE_SYSTEM_D20
 
   return (
     <>
-      <div className="modal-fundo" onClick={onFechar}>
-        <div className="config-painel" onClick={(e) => e.stopPropagation()}>
-          <div className="config-painel-header">
-            <h2>Suas configurações</h2>
-            <button type="button" className="secundario" onClick={onFechar} aria-label="Fechar">
-              ✕
-            </button>
-          </div>
+      <Modal title="Suas configurações" onClose={onClose}>
+        <p className="settings-panel-name">
+          Jogando como <strong style={{ color: player.color }}>{player.name}</strong>
+        </p>
 
-          <p className="config-painel-nome">
-            Jogando como{' '}
-            <strong style={{ color: jogador.cor }}>{jogador.nome}</strong>
-          </p>
-
-          <div className="home-botoes">
-            <button type="button" onClick={() => setModalAberto('hope')}>
-              {ehD20 ? 'Dado d20' : 'Dado de Esperança'}
-            </button>
-            <button type="button" onClick={() => setModalAberto('fear')}>
-              {ehD20 ? 'Dado d20 extra' : 'Dado de Medo'}
-            </button>
-          </div>
-
-          <button type="button" onClick={() => setModalAberto('marcadores')}>
-            Marcadores do Personagem
+        <div className="home-actions">
+          <button type="button" onClick={() => setOpenModal('hope')}>
+            {isD20 ? 'Dado d20' : 'Dado de Esperança'}
+          </button>
+          <button type="button" onClick={() => setOpenModal('fear')}>
+            {isD20 ? 'Dado d20 extra' : 'Dado de Medo'}
           </button>
         </div>
-      </div>
 
-      {modalAberto === 'hope' &&
-        (ehD20 ? (
+        <button type="button" onClick={() => setOpenModal('stats')}>
+          Marcadores do Personagem
+        </button>
+      </Modal>
+
+      {openModal === 'hope' &&
+        (isD20 ? (
           <DiceColorModal
-            titulo="Dado d20"
-            corFundo={jogador.corD20}
-            corBorda={jogador.corBordaD20}
-            corTexto={jogador.corTextoD20}
-            tema={jogador.temaD20 ?? TEMA_PADRAO}
-            padrao={ESTILO_PADRAO_D20}
-            onAplicar={({ corFundo, corBorda, corTexto, tema }) =>
-              onAtualizarJogador({
-                corD20: corFundo,
-                corBordaD20: corBorda,
-                corTextoD20: corTexto,
-                temaD20: tema,
+            title="Dado d20"
+            backgroundColor={player.d20Color}
+            borderColor={player.d20BorderColor}
+            textColor={player.d20TextColor}
+            theme={player.d20Theme ?? DEFAULT_THEME}
+            defaultStyle={DEFAULT_D20_STYLE}
+            onApply={({ backgroundColor, borderColor, textColor, theme }) =>
+              onUpdatePlayer({
+                d20Color: backgroundColor,
+                d20BorderColor: borderColor,
+                d20TextColor: textColor,
+                d20Theme: theme,
               })
             }
-            onFechar={() => setModalAberto(null)}
+            onClose={() => setOpenModal(null)}
           />
         ) : (
           <DiceColorModal
-            titulo="Dado de Esperança"
-            corFundo={jogador.corHope}
-            corBorda={jogador.corBordaHope}
-            corTexto={jogador.corTextoHope}
-            tema={jogador.temaHope ?? TEMA_PADRAO}
-            padrao={ESTILO_PADRAO_HOPE}
-            onAplicar={({ corFundo, corBorda, corTexto, tema }) =>
-              onAtualizarJogador({
-                corHope: corFundo,
-                corBordaHope: corBorda,
-                corTextoHope: corTexto,
-                temaHope: tema,
+            title="Dado de Esperança"
+            backgroundColor={player.hopeColor}
+            borderColor={player.hopeBorderColor}
+            textColor={player.hopeTextColor}
+            theme={player.hopeTheme ?? DEFAULT_THEME}
+            defaultStyle={DEFAULT_HOPE_STYLE}
+            onApply={({ backgroundColor, borderColor, textColor, theme }) =>
+              onUpdatePlayer({
+                hopeColor: backgroundColor,
+                hopeBorderColor: borderColor,
+                hopeTextColor: textColor,
+                hopeTheme: theme,
               })
             }
-            onFechar={() => setModalAberto(null)}
+            onClose={() => setOpenModal(null)}
           />
         ))}
 
-      {modalAberto === 'fear' &&
-        (ehD20 ? (
+      {openModal === 'fear' &&
+        (isD20 ? (
           <DiceColorModal
-            titulo="Dado d20 extra (vantagem/desvantagem)"
-            corFundo={jogador.corD20Extra}
-            corBorda={jogador.corBordaD20Extra}
-            corTexto={jogador.corTextoD20Extra}
-            tema={jogador.temaD20Extra ?? TEMA_PADRAO}
-            padrao={ESTILO_PADRAO_D20_EXTRA}
-            onAplicar={({ corFundo, corBorda, corTexto, tema }) =>
-              onAtualizarJogador({
-                corD20Extra: corFundo,
-                corBordaD20Extra: corBorda,
-                corTextoD20Extra: corTexto,
-                temaD20Extra: tema,
+            title="Dado d20 extra (vantagem/desvantagem)"
+            backgroundColor={player.d20ExtraColor}
+            borderColor={player.d20ExtraBorderColor}
+            textColor={player.d20ExtraTextColor}
+            theme={player.d20ExtraTheme ?? DEFAULT_THEME}
+            defaultStyle={DEFAULT_D20_EXTRA_STYLE}
+            onApply={({ backgroundColor, borderColor, textColor, theme }) =>
+              onUpdatePlayer({
+                d20ExtraColor: backgroundColor,
+                d20ExtraBorderColor: borderColor,
+                d20ExtraTextColor: textColor,
+                d20ExtraTheme: theme,
               })
             }
-            onFechar={() => setModalAberto(null)}
+            onClose={() => setOpenModal(null)}
           />
         ) : (
           <DiceColorModal
-            titulo="Dado de Medo"
-            corFundo={jogador.corFear}
-            corBorda={jogador.corBordaFear}
-            corTexto={jogador.corTextoFear}
-            tema={jogador.temaFear ?? TEMA_PADRAO}
-            padrao={ESTILO_PADRAO_FEAR}
-            onAplicar={({ corFundo, corBorda, corTexto, tema }) =>
-              onAtualizarJogador({
-                corFear: corFundo,
-                corBordaFear: corBorda,
-                corTextoFear: corTexto,
-                temaFear: tema,
+            title="Dado de Medo"
+            backgroundColor={player.fearColor}
+            borderColor={player.fearBorderColor}
+            textColor={player.fearTextColor}
+            theme={player.fearTheme ?? DEFAULT_THEME}
+            defaultStyle={DEFAULT_FEAR_STYLE}
+            onApply={({ backgroundColor, borderColor, textColor, theme }) =>
+              onUpdatePlayer({
+                fearColor: backgroundColor,
+                fearBorderColor: borderColor,
+                fearTextColor: textColor,
+                fearTheme: theme,
               })
             }
-            onFechar={() => setModalAberto(null)}
+            onClose={() => setOpenModal(null)}
           />
         ))}
 
-      {modalAberto === 'marcadores' && (
-        <MarcadoresModal
-          nome={jogador.nome}
-          marcadores={marcadores}
-          onAplicar={onSalvarMarcadores}
-          onFechar={() => setModalAberto(null)}
-        />
+      {openModal === 'stats' && (
+        <StatsModal name={player.name} stats={stats} onApply={onSaveStats} onClose={() => setOpenModal(null)} />
       )}
     </>
   )

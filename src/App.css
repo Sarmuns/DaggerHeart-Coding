@@ -1,8 +1,9 @@
 :root {
-  /* Controla a velocidade de giro do dado durante a rolagem (@keyframes roll-float,
-     mais abaixo neste arquivo). 1 = valores base; 2.6 = ritmo atual. Aumente pra
-     girar mais rápido, diminua pra mais lento — a duração total (2s) não muda. */
-  --dado-giro-velocidade: 2.3;
+  /* Controls the die spin speed during a roll (@keyframes roll-float,
+     further below in this file). 1 = base values; 2.6 = current pace.
+     Increase to spin faster, decrease for slower — the total duration
+     (2s) doesn't change. */
+  --die-spin-speed: 2.3;
 }
 
 .home,
@@ -18,25 +19,25 @@
   box-sizing: border-box;
 }
 
-.home-botoes {
+.home-actions {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
   justify-content: center;
 }
 
-.lista-salas {
+.room-list {
   width: 100%;
   max-width: 320px;
 }
 
-.lista-salas h2 {
+.room-list h2 {
   font-size: 1rem;
   margin-bottom: 8px;
   text-align: center;
 }
 
-.lista-salas ul {
+.room-list ul {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -45,7 +46,7 @@
   gap: 10px;
 }
 
-.sala-item {
+.room-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -58,7 +59,7 @@
   box-shadow: var(--shadow-sm);
 }
 
-.sala-item-codigo {
+.room-item-code {
   font-family: var(--pixel);
   font-size: 18px;
   letter-spacing: 0.06em;
@@ -101,7 +102,7 @@ button.secundario:hover:not(:disabled) {
   color: var(--text-h);
 }
 
-.form-sala,
+.room-form,
 .player-setup form {
   display: flex;
   flex-direction: column;
@@ -127,12 +128,12 @@ input {
   color: var(--text-h);
 }
 
-.erro {
+.error {
   color: var(--danger);
   font-size: 14px;
 }
 
-.label-cores {
+.color-label {
   margin: 0;
   font-family: var(--pixel);
   font-size: 17px;
@@ -142,13 +143,13 @@ input {
   text-align: left;
 }
 
-.cores {
+.colors {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
 }
 
-.cor-swatch {
+.color-swatch {
   width: 30px;
   height: 30px;
   border: 2px solid var(--border);
@@ -156,11 +157,11 @@ input {
   --notch: 4px;
   clip-path: var(--clip-pixel);
 }
-.cor-swatch.selecionada {
+.color-swatch.selected {
   border-color: var(--text-h);
 }
 
-.nome-opcao {
+.name-option {
   padding: 6px 16px;
   font-family: var(--pixel);
   font-size: 18px;
@@ -172,32 +173,32 @@ input {
   clip-path: var(--clip-pixel);
 }
 
-.nome-opcao.selecionada {
+.name-option.selected {
   border-color: var(--accent);
   background: var(--accent-bg);
   color: var(--accent);
 }
 
-.color-input-controles {
+.color-input-controls {
   display: flex;
   gap: 8px;
   align-items: center;
 }
 
-.color-input-controles input[type='color'] {
+.color-input-controls input[type='color'] {
   width: 36px;
   height: 36px;
   padding: 2px;
   cursor: pointer;
 }
 
-.color-input-controles input[type='text'] {
+.color-input-controls input[type='text'] {
   flex: 1;
   font-family: var(--mono);
   text-transform: lowercase;
 }
 
-.campo-erro {
+.field-error {
   border-color: var(--danger) !important;
 }
 
@@ -214,7 +215,7 @@ input {
   width: 100%;
 }
 
-.aviso {
+.notice {
   width: 100%;
   box-sizing: border-box;
   padding: 8px 14px;
@@ -227,17 +228,17 @@ input {
   clip-path: var(--clip-pixel);
 }
 
-.aviso--erro {
+.notice--error {
   border-color: var(--danger);
   color: var(--danger);
 }
 
-.aviso--erro button {
+.notice--error button {
   padding: 2px 10px;
   font-size: 13px;
 }
 
-.sala-titulo {
+.room-title {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -246,7 +247,7 @@ input {
   min-width: 0;
 }
 
-.nome-mesa {
+.table-name {
   font-family: var(--heading);
   font-weight: 400;
   font-size: 20px;
@@ -259,7 +260,7 @@ input {
   -webkit-text-fill-color: currentColor;
 }
 
-.sala-subtitulo {
+.room-subtitle {
   font-family: var(--pixel);
   font-size: 15px;
   letter-spacing: 0.06em;
@@ -267,48 +268,19 @@ input {
   margin: 0;
 }
 
-.botao-config {
+.config-button {
   margin-left: auto;
   padding: 6px 10px;
   font-size: 16px;
   line-height: 1;
 }
 
-.config-painel {
-  width: 100%;
-  max-width: 320px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding: 16px;
-  border: 2px solid var(--border);
-  background: var(--bg-elev);
-  text-align: left;
-  --notch: 8px;
-  clip-path: var(--clip-pixel);
-  box-shadow: var(--shadow);
-}
-
-.config-painel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.config-painel-header h2 {
-  margin: 0;
-}
-
-.config-painel-header button {
-  padding: 4px 10px;
-}
-
-.config-painel-nome {
+.settings-panel-name {
   margin: 0;
   font-size: 14px;
 }
 
-.modal-fundo {
+.modal-backdrop {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.7);
@@ -319,7 +291,7 @@ input {
   z-index: 50;
 }
 
-.modal-caixa {
+.modal-box {
   width: 100%;
   max-width: 320px;
   display: flex;
@@ -334,50 +306,75 @@ input {
   box-shadow: var(--shadow);
 }
 
-.modal-cabecalho {
+.modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.modal-cabecalho h2 {
+.modal-header h2 {
   margin: 0;
 }
 
-.modal-cabecalho button {
+.modal-header button {
   padding: 4px 10px;
 }
 
-.modal-botoes {
+.modal-actions {
   display: flex;
   gap: 10px;
 }
 
-.modal-botoes button {
+.modal-actions button {
   flex: 1;
 }
 
-.marcadores-grid {
+.dice-table {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+  width: 100%;
+}
+
+.stats-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px 10px;
 }
 
-.marcador-caixa {
+.stat--compact {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.stat:not(.stat--compact) {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
+  min-width: 0;
 }
 
-.marcador-caixa-label {
+.stat-label {
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--text-muted, #8a8a8a);
 }
 
-.marcador-caixa-valores {
+.stat--compact .stat-label {
+  font-size: 10px;
+}
+
+.stat:not(.stat--compact) .stat-track-values,
+.stat:not(.stat--compact) input[type='number'] {
+  padding: 8px 10px;
+}
+
+.stat-track-values {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -390,7 +387,14 @@ input {
   clip-path: var(--clip-pixel);
 }
 
-.marcador-caixa-valores input {
+.stat--compact .stat-track-values {
+  padding: 0;
+  border: none;
+  background: transparent;
+  clip-path: none;
+}
+
+.stat-track-values input {
   width: 100%;
   min-width: 0;
   padding: 0;
@@ -401,67 +405,16 @@ input {
   font-size: 15px;
   font-weight: 600;
   text-align: center;
+  -moz-appearance: textfield;
 }
 
-.marcador-caixa-divisor {
-  color: var(--text-muted, #8a8a8a);
+.stat-track-values input::-webkit-outer-spin-button,
+.stat-track-values input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
-.jogador-tag {
-  font-family: var(--pixel);
-  font-size: 16px;
-  letter-spacing: 0.03em;
-  padding: 3px 10px;
-  border: 1.5px solid;
-  background: var(--stone);
-  --notch: 3px;
-  clip-path: var(--clip-pixel);
-}
-
-.jogadores-online {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  flex: 1;
-}
-
-.mesa-dados {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  justify-content: center;
-  width: 100%;
-}
-
-.ficha-jogador {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 10px;
-  justify-content: center;
-  width: 100%;
-  max-width: 220px;
-  padding: 8px 10px;
-  border: 1px solid var(--border);
-  background: var(--stone);
-  --notch: 4px;
-  clip-path: var(--clip-pixel);
-}
-
-.marcador {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-
-.marcador-label {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-muted, #8a8a8a);
-}
-
-.marcador input[type='number'] {
+.stat--compact input[type='number'] {
   width: 36px;
   padding: 2px 4px;
   font-size: 13px;
@@ -471,24 +424,18 @@ input {
   color: var(--text);
 }
 
-.marcador input[type='number']:disabled {
+.stat--compact input[type='number']:disabled {
   opacity: 0.75;
 }
 
-.marcador--track .marcador-track-valores {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-}
-
-.marcador-track-separador {
+.stat-track-separator {
   font-size: 12px;
   color: var(--text-muted, #8a8a8a);
 }
 
-/* Blocos "PV / Evasão / Armadura" acima dos dados — só leitura, rótulo em
-   cima e valor embaixo, cada um no seu bloquinho. */
-.resumo-linha {
+/* "HP / Evasion / Armor" blocks above the dice — read-only, label on top
+   and value below, each in its own little block. */
+.summary-row {
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -496,27 +443,27 @@ input {
   margin-top: -2px;
 }
 
-.resumo-bloco {
+.summary-block {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1px;
 }
 
-.resumo-bloco-label {
+.summary-block-label {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--text-muted, #8a8a8a);
 }
 
-.resumo-bloco-valor {
+.summary-block-value {
   font-size: 13px;
   font-weight: 700;
 }
 
-/* Fileiras de pontinhos (Esperança/Estresse/Fadiga, ou Medo pro DM) */
-.pips-jogador {
+/* Pip rows (Hope/Stress/Fatigue, or Fear for the DM) */
+.player-pips {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -538,7 +485,7 @@ input {
   text-align: right;
 }
 
-.track-pips-bolinhas {
+.track-pips-dots {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
@@ -553,20 +500,20 @@ input {
   display: inline-block;
 }
 
-.track-linha {
+.track-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 6px;
 }
 
-.track-remover {
+.track-remove {
   display: flex;
   align-items: center;
   gap: 3px;
 }
 
-.track-remover input {
+.track-remove input {
   width: 26px;
   padding: 1px 2px;
   font-size: 11px;
@@ -576,7 +523,7 @@ input {
   color: var(--text);
 }
 
-.track-botao {
+.track-button {
   width: 18px;
   height: 18px;
   padding: 0;
@@ -590,31 +537,31 @@ input {
   --notch: 2px;
   box-shadow: none;
 }
-.track-botao:active:not(:disabled) {
+.track-button:active:not(:disabled) {
   transform: none;
 }
 
-.track-botao:disabled {
+.track-button:disabled {
   opacity: 0.4;
   cursor: default;
 }
 
-/* O "-" ganha reação própria no hover — gelo e encolhendo, pra não virar o
-   mesmo vermelho genérico de botão (que parecia um "+" de tão parecido). O
-   "+" continua usando o hover padrão, sem mexer. */
-.track-botao:not(.track-botao--somar):hover:not(:disabled) {
+/* The "-" gets its own hover reaction — icy and shrinking, so it doesn't
+   end up the same generic red as a button hover (which read too much like
+   a "+"). The "+" keeps the default hover, untouched. */
+.track-button:not(.track-button--add):hover:not(:disabled) {
   background: #3e6f9e;
   border-color: #2d5478;
   color: #eaf2fb;
   transform: scale(0.82) rotate(-6deg);
 }
 
-.pip--cheio {
+.pip--filled {
   background: var(--accent);
   border-color: var(--accent);
 }
 
-.conjunto-dados {
+.dice-set {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -629,32 +576,32 @@ input {
   box-shadow: var(--shadow);
 }
 
-.conjunto-dados--voce {
+.dice-set--you {
   border-color: var(--accent);
   box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.55), 0 0 0 1px var(--accent) inset;
 }
 
-.conjunto-dados-nome {
+.dice-set-name {
   font-family: var(--pixel);
   font-weight: 400;
   font-size: 18px;
   letter-spacing: 0.03em;
 }
 
-.dados {
+.dice-row {
   display: flex;
   gap: 32px;
   padding-top: 12px;
 }
 
-.dado-estagio {
+.die-stage {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
 }
 
-.dado-palco {
+.die-platform {
   width: 140px;
   height: 150px;
   position: relative;
@@ -663,7 +610,7 @@ input {
   justify-content: center;
 }
 
-.dado-palco::before {
+.die-platform::before {
   content: '';
   position: absolute;
   left: 50%;
@@ -679,113 +626,114 @@ input {
   z-index: 0;
 }
 
-.dado-palco--rolando::before {
+.die-platform--rolling::before {
   opacity: 0.5;
   transform: translateX(-50%) scale(1.1);
 }
 
-/* O resultado (.dice-result) fica sempre com transição quase instantânea:
-   preferimos "piscar" pro valor final a arrastar visualmente até ele. */
-.dado-palco .dice-result {
+/* The result (.dice-result) always transitions almost instantly: we prefer
+   "flashing" to the final value over visually dragging into it. */
+.die-platform .dice-result {
   transition: transform 1ms linear;
 }
 
-.dado-palco .dice-wrapper {
+.die-platform .dice-wrapper {
   position: relative;
   z-index: 1;
   transition: transform 200ms ease-out;
 }
-.dado-palco--rolando .dice-wrapper {
+.die-platform--rolling .dice-wrapper {
   transform: scale(1.25);
 }
 
-/* Sobrescreve o caminho da animação "float" da lib (mesmo nome, definição nossa):
-   X, Y e Z variam de forma independente e não-proporcional, com reversões de
-   direção em momentos diferentes por eixo — evita girar sempre em torno do
-   mesmo eixo diagonal fixo (que lia como "sempre pra mesma diagonal"). */
+/* Overrides the library's "float" animation path (same name, our own
+   definition): X, Y and Z vary independently and non-proportionally, with
+   direction reversals at different moments per axis — avoids always
+   spinning around the same fixed diagonal axis (which read as "always the
+   same diagonal"). */
 @keyframes roll-float {
   0% {
     transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg);
   }
   9% {
-    transform: rotateX(calc(60deg * var(--dado-giro-velocidade)))
-      rotateY(calc(100deg * var(--dado-giro-velocidade)))
-      rotateZ(calc(-30deg * var(--dado-giro-velocidade)));
+    transform: rotateX(calc(60deg * var(--die-spin-speed)))
+      rotateY(calc(100deg * var(--die-spin-speed)))
+      rotateZ(calc(-30deg * var(--die-spin-speed)));
   }
   18% {
-    transform: rotateX(calc(220deg * var(--dado-giro-velocidade)))
-      rotateY(calc(40deg * var(--dado-giro-velocidade)))
-      rotateZ(calc(80deg * var(--dado-giro-velocidade)));
+    transform: rotateX(calc(220deg * var(--die-spin-speed)))
+      rotateY(calc(40deg * var(--die-spin-speed)))
+      rotateZ(calc(80deg * var(--die-spin-speed)));
   }
   27% {
-    transform: rotateX(calc(180deg * var(--dado-giro-velocidade)))
-      rotateY(calc(260deg * var(--dado-giro-velocidade)))
-      rotateZ(calc(200deg * var(--dado-giro-velocidade)));
+    transform: rotateX(calc(180deg * var(--die-spin-speed)))
+      rotateY(calc(260deg * var(--die-spin-speed)))
+      rotateZ(calc(200deg * var(--die-spin-speed)));
   }
   36% {
-    transform: rotateX(calc(380deg * var(--dado-giro-velocidade)))
-      rotateY(calc(320deg * var(--dado-giro-velocidade)))
-      rotateZ(calc(140deg * var(--dado-giro-velocidade)));
+    transform: rotateX(calc(380deg * var(--die-spin-speed)))
+      rotateY(calc(320deg * var(--die-spin-speed)))
+      rotateZ(calc(140deg * var(--die-spin-speed)));
   }
   45% {
-    transform: rotateX(calc(420deg * var(--dado-giro-velocidade)))
-      rotateY(calc(540deg * var(--dado-giro-velocidade)))
-      rotateZ(calc(320deg * var(--dado-giro-velocidade)));
+    transform: rotateX(calc(420deg * var(--die-spin-speed)))
+      rotateY(calc(540deg * var(--die-spin-speed)))
+      rotateZ(calc(320deg * var(--die-spin-speed)));
   }
   55% {
-    transform: rotateX(calc(600deg * var(--dado-giro-velocidade)))
-      rotateY(calc(480deg * var(--dado-giro-velocidade)))
-      rotateZ(calc(260deg * var(--dado-giro-velocidade)));
+    transform: rotateX(calc(600deg * var(--die-spin-speed)))
+      rotateY(calc(480deg * var(--die-spin-speed)))
+      rotateZ(calc(260deg * var(--die-spin-speed)));
   }
   64% {
-    transform: rotateX(calc(560deg * var(--dado-giro-velocidade)))
-      rotateY(calc(680deg * var(--dado-giro-velocidade)))
-      rotateZ(calc(460deg * var(--dado-giro-velocidade)));
+    transform: rotateX(calc(560deg * var(--die-spin-speed)))
+      rotateY(calc(680deg * var(--die-spin-speed)))
+      rotateZ(calc(460deg * var(--die-spin-speed)));
   }
   73% {
-    transform: rotateX(calc(760deg * var(--dado-giro-velocidade)))
-      rotateY(calc(720deg * var(--dado-giro-velocidade)))
-      rotateZ(calc(380deg * var(--dado-giro-velocidade)));
+    transform: rotateX(calc(760deg * var(--die-spin-speed)))
+      rotateY(calc(720deg * var(--die-spin-speed)))
+      rotateZ(calc(380deg * var(--die-spin-speed)));
   }
   82% {
-    transform: rotateX(calc(820deg * var(--dado-giro-velocidade)))
-      rotateY(calc(900deg * var(--dado-giro-velocidade)))
-      rotateZ(calc(560deg * var(--dado-giro-velocidade)));
+    transform: rotateX(calc(820deg * var(--die-spin-speed)))
+      rotateY(calc(900deg * var(--die-spin-speed)))
+      rotateZ(calc(560deg * var(--die-spin-speed)));
   }
   91% {
-    transform: rotateX(calc(900deg * var(--dado-giro-velocidade)))
-      rotateY(calc(860deg * var(--dado-giro-velocidade)))
-      rotateZ(calc(520deg * var(--dado-giro-velocidade)));
+    transform: rotateX(calc(900deg * var(--die-spin-speed)))
+      rotateY(calc(860deg * var(--die-spin-speed)))
+      rotateZ(calc(520deg * var(--die-spin-speed)));
   }
   100% {
-    transform: rotateX(calc(950deg * var(--dado-giro-velocidade)))
-      rotateY(calc(920deg * var(--dado-giro-velocidade)))
-      rotateZ(calc(560deg * var(--dado-giro-velocidade)));
+    transform: rotateX(calc(950deg * var(--die-spin-speed)))
+      rotateY(calc(920deg * var(--die-spin-speed)))
+      rotateZ(calc(560deg * var(--die-spin-speed)));
   }
 }
 
-.dado-label {
+.die-label {
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--text);
 }
 
-.dado-estagio--modificador {
+.die-stage--modifier {
   opacity: 1;
   transition: opacity 0.2s;
 }
 
-.dado-estagio--oculto {
+.die-stage--hidden {
   display: none;
 }
 
-.dado-palco--pequeno {
+.die-platform--small {
   width: 90px;
   height: 96px;
 }
 
-.modo-rolagem {
+.pill-group {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
@@ -804,18 +752,18 @@ input {
   clip-path: var(--clip-pixel);
 }
 
-.pill--ativa {
+.pill--active {
   border-color: var(--accent);
   background: var(--accent-bg);
   color: var(--accent);
 }
 
-.botao-rolar {
+.roll-button {
   font-size: 22px;
   padding: 12px 32px;
 }
 
-.botao-rolar-discreto {
+.roll-button-discreet {
   font-size: 12px;
   padding: 4px 10px;
   margin-top: 2px;
@@ -825,31 +773,31 @@ input {
   color: var(--text);
 }
 
-.botao-rolar-discreto:hover:not(:disabled) {
+.roll-button-discreet:hover:not(:disabled) {
   opacity: 1;
   border-color: var(--accent);
   color: var(--accent);
 }
 
-.resultado {
+.result {
   font-size: 20px;
   font-weight: 600;
 }
 
-.resultado--d20 {
+.result--d20 {
   font-size: 28px;
   font-weight: 800;
 }
 
-.conjunto-dados-resultado {
+.dice-set-result {
   margin: 0;
   font-size: 14px;
   font-weight: 600;
   text-align: center;
-  animation: dissipar-resultado 5s ease forwards;
+  animation: fade-result 5s ease forwards;
 }
 
-@keyframes dissipar-resultado {
+@keyframes fade-result {
   0%,
   60% {
     opacity: 1;
@@ -859,23 +807,23 @@ input {
   }
 }
 
-.conjunto-dados-resultado--d20 {
+.dice-set-result--d20 {
   font-size: 18px;
   font-weight: 800;
 }
 
-.historico-resultado--d20 {
+.history-result--d20 {
   font-size: 16px;
   font-weight: 800;
 }
 
-.historico-modificador {
+.history-modifier {
   margin-left: 6px;
   font-size: 12px;
   opacity: 0.8;
 }
 
-.select-tema {
+.theme-select {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -883,7 +831,7 @@ input {
   font-size: 14px;
 }
 
-.select-tema select {
+.theme-select select {
   font: inherit;
   padding: 6px 8px;
   border: 1px solid var(--border);
@@ -891,32 +839,32 @@ input {
   color: var(--text);
 }
 
-.dado-preview {
+.die-preview {
   margin: 0 auto;
 }
 
-.historico {
+.history {
   width: 100%;
 }
 
-.historico h2 {
+.history h2 {
   text-align: left;
   margin: 0;
 }
 
-.historico-cabecalho {
+.history-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 8px;
 }
 
-.historico-cabecalho button {
+.history-header button {
   padding: 4px 10px;
   font-size: 13px;
 }
 
-.historico-filtros {
+.history-filters {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -924,7 +872,7 @@ input {
   margin-bottom: 10px;
 }
 
-.historico-filtro-data {
+.history-filter-date {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -932,7 +880,7 @@ input {
   color: var(--text-muted, #8a8a8a);
 }
 
-.historico-filtro-data input {
+.history-filter-date input {
   font: inherit;
   padding: 4px 8px;
   border: 1px solid var(--border);
@@ -940,14 +888,14 @@ input {
   color: var(--text);
 }
 
-.historico-vazio {
+.history-empty {
   padding: 8px 12px;
   font-size: 13px;
   color: var(--text-muted, #8a8a8a);
   text-align: center;
 }
 
-.historico ul {
+.history ul {
   list-style: none;
   padding: 0;
   margin: 0;
@@ -958,7 +906,7 @@ input {
   overflow-y: auto;
 }
 
-.historico-item {
+.history-item {
   display: flex;
   justify-content: space-between;
   gap: 8px;
@@ -970,19 +918,19 @@ input {
   clip-path: var(--clip-pixel);
 }
 
-.historico-jogador {
+.history-player {
   font-weight: 600;
   flex: 1;
   text-align: left;
 }
 
-.historico-horario {
+.history-time {
   color: var(--text-muted, #8a8a8a);
   font-size: 12px;
   white-space: nowrap;
 }
 
-.modal-status {
+.status-modal {
   position: fixed;
   z-index: 50;
   width: 280px;
@@ -997,7 +945,7 @@ input {
   overflow: hidden;
 }
 
-.modal-status-header {
+.status-modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1011,11 +959,11 @@ input {
   touch-action: none;
 }
 
-.modal-status-header button {
+.status-modal-header button {
   padding: 2px 8px;
 }
 
-.modal-status-corpo {
+.status-modal-body {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -1023,7 +971,7 @@ input {
   overflow-y: auto;
 }
 
-.modal-status-jogador {
+.status-modal-player {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -1031,23 +979,23 @@ input {
   border-bottom: 1px solid var(--border);
 }
 
-.modal-status-jogador:last-child {
+.status-modal-player:last-child {
   border-bottom: none;
   padding-bottom: 0;
 }
 
-.modal-status-vazio {
+.status-modal-empty {
   font-size: 13px;
   color: var(--text-muted, #8a8a8a);
   text-align: center;
   margin: 0;
 }
 
-/* Efeitos de Crítico — um dos 5 é sorteado por EfeitoCritico.jsx a cada
-   crítico (Esperança == Medo, ou nat 20). Ancorado na caixa de quem rolou
-   (.conjunto-dados já é position: relative), sem interceptar clique, some
-   sozinho quando a animação termina. */
-.efeito-critico {
+/* Critical effects — one of 5 is picked by CriticalEffect.jsx on every
+   critical (Hope == Fear, or a nat 20). Anchored to the box of whoever
+   rolled (.dice-set is already position: relative), doesn't intercept
+   clicks, disappears on its own when the animation ends. */
+.critical-effect {
   position: absolute;
   inset: 0;
   z-index: 20;
@@ -1055,17 +1003,18 @@ input {
   pointer-events: none;
 }
 
-/* Tremidão que toda rolagem crítica aplica na caixa de quem rolou, além do
-   efeito visual sorteado. "Forte" é o do tipo tremor; "leve" é o padrão. */
-.caixa-tremor-leve {
-  animation: caixa-tremor-shake 350ms ease;
+/* Shake that every critical roll applies to the box of whoever rolled, on
+   top of the specific effect picked. "Strong" is for the shake effect
+   type; "light" is the default. */
+.box-shake-light {
+  animation: box-shake 350ms ease;
 }
 
-.caixa-tremor-forte {
-  animation: caixa-tremor-shake-forte 500ms ease;
+.box-shake-strong {
+  animation: box-shake-strong 500ms ease;
 }
 
-@keyframes caixa-tremor-shake-forte {
+@keyframes box-shake-strong {
   0%,
   100% {
     transform: translate(0, 0);
@@ -1099,7 +1048,7 @@ input {
   }
 }
 
-@keyframes caixa-tremor-shake {
+@keyframes box-shake {
   0%,
   100% {
     transform: translate(0, 0);
@@ -1124,13 +1073,13 @@ input {
   }
 }
 
-/* 1) Faíscas — mini explosão de brasa estourando do centro da caixa: um
-   flash de impacto seguido dos estilhaços voando mais longe/maiores. */
-.efeito-faiscas {
+/* 1) Sparks — a mini ember explosion bursting from the center of the box:
+   an impact flash followed by shards flying farther/bigger. */
+.critical-effect-sparks {
   overflow: hidden;
 }
 
-.faiscas-flash {
+.sparks-flash {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -1139,10 +1088,10 @@ input {
   border-radius: 50%;
   background: radial-gradient(circle, #fff 0%, var(--accent) 45%, transparent 75%);
   transform: translate(-50%, -50%) scale(0);
-  animation: faiscas-flash-estourar 380ms ease-out forwards;
+  animation: sparks-flash-burst 380ms ease-out forwards;
 }
 
-@keyframes faiscas-flash-estourar {
+@keyframes sparks-flash-burst {
   0% {
     transform: translate(-50%, -50%) scale(0);
     opacity: 1;
@@ -1157,7 +1106,7 @@ input {
   }
 }
 
-.faisca {
+.spark {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -1166,31 +1115,31 @@ input {
   background: var(--accent);
   box-shadow: 0 0 0 3px var(--primary), 0 0 10px 2px var(--accent);
   transform: translate(-50%, -50%);
-  animation: faisca-estourar 1050ms cubic-bezier(0.15, 0.75, 0.3, 1) forwards;
+  animation: spark-burst 1050ms cubic-bezier(0.15, 0.75, 0.3, 1) forwards;
 }
 
-@keyframes faisca-estourar {
+@keyframes spark-burst {
   0% {
-    transform: translate(-50%, -50%) rotate(var(--angulo)) translateX(0) scale(1.3);
+    transform: translate(-50%, -50%) rotate(var(--angle)) translateX(0) scale(1.3);
     opacity: 1;
   }
   60% {
     opacity: 1;
   }
   100% {
-    transform: translate(-50%, -50%) rotate(var(--angulo)) translateX(var(--distancia)) scale(0.3);
+    transform: translate(-50%, -50%) rotate(var(--angle)) translateX(var(--distance)) scale(0.3);
     opacity: 0;
   }
 }
 
-/* 2) Tremor — o tremidão em si vem de .caixa-tremor-forte (aplicada na
-   caixa pelo componente); aqui só o flash vermelho de impacto. */
-.efeito-tremor-flash {
+/* 2) Shake — the shake itself comes from .box-shake-strong (applied to the
+   box by the component); here just the red impact flash. */
+.critical-effect-shake-flash {
   background: radial-gradient(ellipse at center, transparent 40%, rgba(179, 67, 47, 0.4) 100%);
-  animation: tremor-flash 500ms ease-out forwards;
+  animation: shake-flash 500ms ease-out forwards;
 }
 
-@keyframes tremor-flash {
+@keyframes shake-flash {
   0% {
     opacity: 1;
   }
@@ -1199,16 +1148,16 @@ input {
   }
 }
 
-/* 3) Fenda — clarão branco/dourado com um raio rachando a tela. */
-.efeito-fenda {
+/* 3) Crack — a white/golden flash with a bolt cracking the screen. */
+.critical-effect-crack {
   display: flex;
   align-items: center;
   justify-content: center;
   background: #fff8ec;
-  animation: fenda-flash-bg 500ms ease-out forwards;
+  animation: crack-flash-bg 500ms ease-out forwards;
 }
 
-@keyframes fenda-flash-bg {
+@keyframes crack-flash-bg {
   0% {
     opacity: 0.85;
   }
@@ -1223,13 +1172,13 @@ input {
   }
 }
 
-.fenda-raio {
+.crack-bolt {
   width: 85%;
   height: 85%;
-  animation: fenda-raio-fade 700ms ease-out forwards;
+  animation: crack-bolt-fade 700ms ease-out forwards;
 }
 
-.fenda-raio polyline {
+.crack-bolt polyline {
   fill: none;
   stroke: var(--accent);
   stroke-width: 3;
@@ -1237,7 +1186,7 @@ input {
   filter: drop-shadow(0 0 6px var(--primary));
 }
 
-@keyframes fenda-raio-fade {
+@keyframes crack-bolt-fade {
   0% {
     opacity: 1;
     transform: scale(0.8);
@@ -1252,14 +1201,15 @@ input {
   }
 }
 
-/* 4) Selo — carimbo pixelado de "CRÍTICO!" batendo no centro da tela. */
-.efeito-selo {
+/* 4) Seal — a pixelated "CRÍTICO!" stamp slamming into the center of the
+   screen. */
+.critical-effect-seal {
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.selo-texto {
+.seal-text {
   font-family: var(--heading);
   font-size: 13px;
   line-height: 1.6;
@@ -1273,10 +1223,10 @@ input {
   text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.6);
   transform: scale(0) rotate(-10deg);
   opacity: 0;
-  animation: selo-bater 1500ms cubic-bezier(0.2, 1.4, 0.4, 1) forwards;
+  animation: seal-stamp 1500ms cubic-bezier(0.2, 1.4, 0.4, 1) forwards;
 }
 
-@keyframes selo-bater {
+@keyframes seal-stamp {
   0% {
     transform: scale(0) rotate(-10deg);
     opacity: 0;
@@ -1301,24 +1251,24 @@ input {
   }
 }
 
-/* 5) Moedas — chuva de moedas pixeladas caindo do topo da tela. */
-.efeito-moedas {
+/* 5) Coins — a rain of pixelated coins falling from the top of the screen. */
+.critical-effect-coins {
   overflow: hidden;
 }
 
-.moeda {
+.coin {
   position: absolute;
   top: -10px;
   width: 8px;
   height: 8px;
   background: var(--accent);
   border: 1.5px solid var(--primary-active);
-  animation-name: moeda-cair;
+  animation-name: coin-fall;
   animation-timing-function: ease-in;
   animation-fill-mode: forwards;
 }
 
-@keyframes moeda-cair {
+@keyframes coin-fall {
   0% {
     transform: translateY(0) rotate(0deg);
     opacity: 1;

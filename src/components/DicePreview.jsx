@@ -1,20 +1,20 @@
 import { DiceRoller } from '@gnuton/css-dice-roller'
 import { useEffect, useRef } from 'react'
 
-const ESCALA_PREVIEW = 80
+const PREVIEW_SCALE = 80
 
-function DicePreview({ corFundo, corBorda, corTexto, tema }) {
-  const palcoRef = useRef(null)
+function DicePreview({ backgroundColor, borderColor, textColor, theme }) {
+  const stageRef = useRef(null)
   const rollerRef = useRef(null)
 
   useEffect(() => {
-    const roller = new DiceRoller(palcoRef.current, ESCALA_PREVIEW)
+    const roller = new DiceRoller(stageRef.current, PREVIEW_SCALE)
     const [die] = roller.addDie('d12')
     roller.updateSettings({
-      baseColor: corFundo,
-      secondaryColor: corBorda,
-      textColor: corTexto,
-      theme: tema,
+      baseColor: backgroundColor,
+      secondaryColor: borderColor,
+      textColor,
+      theme,
       animation: 'none',
     })
     die.setResult(12)
@@ -26,14 +26,14 @@ function DicePreview({ corFundo, corBorda, corTexto, tema }) {
 
   useEffect(() => {
     rollerRef.current?.updateSettings({
-      baseColor: corFundo,
-      secondaryColor: corBorda,
-      textColor: corTexto,
-      theme: tema,
+      baseColor: backgroundColor,
+      secondaryColor: borderColor,
+      textColor,
+      theme,
     })
-  }, [corFundo, corBorda, corTexto, tema])
+  }, [backgroundColor, borderColor, textColor, theme])
 
-  return <div ref={palcoRef} className="dado-palco dado-preview" />
+  return <div ref={stageRef} className="die-platform die-preview" />
 }
 
 export default DicePreview

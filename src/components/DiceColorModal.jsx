@@ -1,75 +1,67 @@
 import { useState } from 'react'
-import { TEMAS_DADOS } from '../utils/temasDados'
+import { DICE_THEMES } from '../utils/diceThemes'
 import ColorInput from './ColorInput'
 import DicePreview from './DicePreview'
+import Modal from './Modal'
 
-function DiceColorModal({ titulo, corFundo, corBorda, corTexto, tema, padrao, onAplicar, onFechar }) {
-  // Estado de rascunho: só vira "de verdade" (broadcast + banco) quando o
-  // jogador clica em Aplicar, evitando sincronizar cada tecla digitada.
-  const [rascunhoFundo, setRascunhoFundo] = useState(corFundo)
-  const [rascunhoBorda, setRascunhoBorda] = useState(corBorda)
-  const [rascunhoTexto, setRascunhoTexto] = useState(corTexto)
-  const [rascunhoTema, setRascunhoTema] = useState(tema)
+function DiceColorModal({ title, backgroundColor, borderColor, textColor, theme, defaultStyle, onApply, onClose }) {
+  // Draft state: only becomes "real" (broadcast + database) once the player
+  // clicks Apply, avoiding a sync on every keystroke.
+  const [draftBackground, setDraftBackground] = useState(backgroundColor)
+  const [draftBorder, setDraftBorder] = useState(borderColor)
+  const [draftText, setDraftText] = useState(textColor)
+  const [draftTheme, setDraftTheme] = useState(theme)
 
-  function aplicar() {
-    onAplicar({
-      corFundo: rascunhoFundo,
-      corBorda: rascunhoBorda,
-      corTexto: rascunhoTexto,
-      tema: rascunhoTema,
+  function apply() {
+    onApply({
+      backgroundColor: draftBackground,
+      borderColor: draftBorder,
+      textColor: draftText,
+      theme: draftTheme,
     })
-    onFechar()
+    onClose()
   }
 
-  function resetarParaPadrao() {
-    setRascunhoFundo(padrao.corFundo)
-    setRascunhoBorda(padrao.corBorda)
-    setRascunhoTexto(padrao.corTexto)
-    setRascunhoTema(padrao.tema)
+  function resetToDefault() {
+    setDraftBackground(defaultStyle.backgroundColor)
+    setDraftBorder(defaultStyle.borderColor)
+    setDraftText(defaultStyle.textColor)
+    setDraftTheme(defaultStyle.theme)
   }
 
   return (
-    <div className="modal-fundo" onClick={onFechar}>
-      <div className="modal-caixa" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-cabecalho">
-          <h2>{titulo}</h2>
-          <button type="button" className="secundario" onClick={onFechar} aria-label="Fechar">
-            ✕
-          </button>
-        </div>
+    <Modal title={title} onClose={onClose}>
+      <DicePreview
+        backgroundColor={draftBackground}
+        borderColor={draftBorder}
+        textColor={draftText}
+        theme={draftTheme}
+      />
 
-        <DicePreview
-          corFundo={rascunhoFundo}
-          corBorda={rascunhoBorda}
-          corTexto={rascunhoTexto}
-          tema={rascunhoTema}
-        />
+      <label className="theme-select">
+        Tema / efeito
+        <select value={draftTheme} onChange={(e) => setDraftTheme(e.target.value)}>
+          {DICE_THEMES.map((t) => (
+            <option key={t.value} value={t.value}>
+              {t.name}
+            </option>
+          ))}
+        </select>
+      </label>
 
-        <label className="select-tema">
-          Tema / efeito
-          <select value={rascunhoTema} onChange={(e) => setRascunhoTema(e.target.value)}>
-            {TEMAS_DADOS.map((t) => (
-              <option key={t.valor} value={t.valor}>
-                {t.nome}
-              </option>
-            ))}
-          </select>
-        </label>
+      <ColorInput label="Cor do dado" value={draftBackground} onChange={setDraftBackground} />
+      <ColorInput label="Cor das bordas" value={draftBorder} onChange={setDraftBorder} />
+      <ColorInput label="Cor dos números" value={draftText} onChange={setDraftText} />
 
-        <ColorInput label="Cor do dado" value={rascunhoFundo} onChange={setRascunhoFundo} />
-        <ColorInput label="Cor das bordas" value={rascunhoBorda} onChange={setRascunhoBorda} />
-        <ColorInput label="Cor dos números" value={rascunhoTexto} onChange={setRascunhoTexto} />
-
-        <div className="modal-botoes">
-          <button type="button" className="secundario" onClick={resetarParaPadrao}>
-            Resetar para padrão
-          </button>
-          <button type="button" onClick={aplicar}>
-            Aplicar
-          </button>
-        </div>
+      <div className="modal-actions">
+        <button type="button" className="secundario" onClick={resetToDefault}>
+          Resetar para padrão
+        </button>
+        <button type="button" onClick={apply}>
+          Aplicar
+        </button>
       </div>
-    </div>
+    </Modal>
   )
 }
 

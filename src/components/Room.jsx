@@ -1,515 +1,502 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import {
-  calcularResultado,
-  calcularResultadoD20,
-  calcularTotal,
-  ehVencedorD20,
-  rolarDados,
-  textoResultado,
+  calculateResult,
+  calculateD20Result,
+  calculateTotal,
+  isD20Winner,
+  rollDice,
+  resultText as diceResultText,
 } from '../utils/dice'
 import {
-  MECANICA_D20,
-  MECANICA_DUALIDADE,
-  ehDM,
-  estiloPrincipal,
-  estiloSecundario,
-  mecanicaDoJogador,
-} from '../utils/mecanicaJogador'
-import { MARCADORES_PADRAO, marcadoresDoPresence } from '../utils/marcadoresJogador'
-import { carregarMarcadoresDoJogador, salvarMarcadoresDoJogador } from '../utils/marcadoresJogadorDb'
-import { ehCritico, sortearEfeitoCritico } from '../utils/efeitosCritico'
+  DICE_SYSTEM_D20,
+  DICE_SYSTEM_DUALITY,
+  isDM,
+  primaryStyle,
+  secondaryStyle,
+  defaultDiceSystemFor,
+} from '../utils/diceSystem'
+import { DEFAULT_STATS, statsFromPresence } from '../utils/playerStats'
+import { loadPlayerStats, savePlayerStats } from '../utils/playerStatsDb'
+import { isCritical, pickCriticalEffect } from '../utils/criticalEffects'
 import ColorSettingsPanel from './ColorSettingsPanel'
-import ModalStatus from './ModalStatus'
+import IconButton from './IconButton'
+import PartyStatusModal from './PartyStatusModal'
+import { Pill, PillGroup } from './Pill'
 import PlayerDiceSet from './PlayerDiceSet'
 
-const COR_CRITICO = '#aa3bff'
-const FUSO_BRASIL = 'America/Sao_Paulo'
-const DURACAO_RESULTADO_MS = 5000
-// Filtro de histórico por data já implementado, só escondido do front por..
-// enquanto — trocar pra true reativa a UI sem precisar reescrever nada.
-const MOSTRAR_FILTRO_DATA = false
+const CRITICAL_COLOR = '#aa3bff'
+const BRAZIL_TIMEZONE = 'America/Sao_Paulo'
+const RESULT_DURATION_MS = 5000
+// Date filter for the history is already implemented, just hidden from the
+// UI for now — flip to true to bring it back without rewriting anything.
+const SHOW_DATE_FILTER = false
 
-// "cores" aqui sempre chega já resolvida (corHope/corFear = principal/
-// secundária da mecânica em uso), então não precisa saber d20 vs dualidade.
-function corResultado(vencedor, cores) {
-  if (vencedor === 'hope' || vencedor === 'd20') return cores.corHope
-  if (vencedor === 'fear') return cores.corFear
-  return COR_CRITICO
+// "colors" here always arrives already resolved (hopeColor/fearColor =
+// primary/secondary slot of the dice system in use), so it doesn't need to
+// know duality vs d20.
+function resultColor(winner, colors) {
+  if (winner === 'hope' || winner === 'd20') return colors.hopeColor
+  if (winner === 'fear') return colors.fearColor
+  return CRITICAL_COLOR
 }
 
-function dataDoRegistro(isoString) {
-  // O Postgres grava "timestamp" sem timezone usando o horário UTC da sessão,
-  // então a string vem sem "Z" — sem isso o navegador a interpretaria como
-  // hora local, dobrando o erro de fuso.
+function recordDate(isoString) {
+  // Postgres writes a timezone-less "timestamp" using the session's UTC
+  // time, so the string arrives without "Z" — without this the browser
+  // would read it as local time, doubling the timezone error.
   return new Date(isoString.endsWith('Z') ? isoString : `${isoString}Z`)
 }
 
-function formatarHorario(data) {
-  const dataFormatada = data.toLocaleDateString('pt-BR', { timeZone: FUSO_BRASIL })
-  const horaFormatada = data.toLocaleTimeString('pt-BR', {
+function formatTime(date) {
+  const formattedDate = date.toLocaleDateString('pt-BR', { timeZone: BRAZIL_TIMEZONE })
+  const formattedTime = date.toLocaleTimeString('pt-BR', {
     hour: '2-digit',
     minute: '2-digit',
-    timeZone: FUSO_BRASIL,
+    timeZone: BRAZIL_TIMEZONE,
   })
-  return `${dataFormatada} ${horaFormatada}`
+  return `${formattedDate} ${formattedTime}`
 }
 
-// yyyy-mm-dd no fuso de São Paulo — formato comparável direto com o valor
-// de um <input type="date">, pra filtrar o histórico por dia.
-function dataISOBrasil(data) {
-  return data.toLocaleDateString('sv-SE', { timeZone: FUSO_BRASIL })
+// yyyy-mm-dd in the São Paulo timezone — directly comparable to the value
+// of an <input type="date">, to filter the history by day.
+function isoDateBrazil(date) {
+  return date.toLocaleDateString('sv-SE', { timeZone: BRAZIL_TIMEZONE })
 }
 
-function linhaParaHistorico(linha) {
-  const data = dataDoRegistro(linha.criado_em)
+// Translation boundary: the `rolls` table/columns already exist in
+// production (jogador, cor, dado_hope, dado_fear, resultado, vencedor,
+// total, modificador_tipo/valor, cor_hope/cor_fear) — keep those exact
+// literal names when reading/writing rows.
+function rowToHistoryItem(row) {
+  const date = recordDate(row.criado_em)
   return {
-    id: linha.id,
-    jogador: linha.jogador,
-    cor: linha.cor,
-    corHope: linha.cor_hope,
-    corFear: linha.cor_fear,
-    hope: linha.dado_hope,
-    fear: linha.dado_fear,
-    vencedor: linha.vencedor,
-    total: linha.total,
-    horario: formatarHorario(data),
-    dataISO: dataISOBrasil(data),
-    modificador: linha.modificador_tipo
-      ? { tipo: linha.modificador_tipo, valor: linha.modificador_valor }
-      : null,
+    id: row.id,
+    player: row.jogador,
+    color: row.cor,
+    hopeColor: row.cor_hope,
+    fearColor: row.cor_fear,
+    hope: row.dado_hope,
+    fear: row.dado_fear,
+    winner: row.vencedor,
+    total: row.total,
+    time: formatTime(date),
+    dateISO: isoDateBrazil(date),
+    modifier: row.modificador_tipo ? { type: row.modificador_tipo, value: row.modificador_valor } : null,
   }
 }
 
-function Room({ sala, jogador, onAtualizarJogador }) {
-  const canalRef = useRef(null)
+function Room({ room, player, onUpdatePlayer }) {
+  const channelRef = useRef(null)
   const presenceKeyRef = useRef(crypto.randomUUID())
-  const diceRefsRef = useRef(new Map())
-  const [rolando, setRolando] = useState(false)
-  const [ultimoResultado, setUltimoResultado] = useState(null)
-  // Último resultado de cada jogador (por presenceKey), pra mostrar "4 com
-  // Esperança" etc. na caixa de dados de todo mundo, não só de quem rolou.
-  // Some sozinho depois de alguns segundos — o histórico é que guarda o
-  // registro permanente.
-  const [resultadosPorJogador, setResultadosPorJogador] = useState({})
-  const timersResultadoRef = useRef(new Map())
+  const diceSetRefsRef = useRef(new Map())
+  const [rolling, setRolling] = useState(false)
+  const [lastResult, setLastResult] = useState(null)
+  // Latest result for each player (by presenceKey), to show "4 com
+  // Esperança" etc. on everyone's dice box, not just the roller's. Clears
+  // itself after a few seconds — the history keeps the permanent record.
+  const [resultsByPlayer, setResultsByPlayer] = useState({})
+  const resultTimersRef = useRef(new Map())
 
-  function definirResultadoDoJogador(presenceKey, resultado) {
-    setResultadosPorJogador((atual) => ({ ...atual, [presenceKey]: resultado }))
+  function setPlayerResult(presenceKey, result) {
+    setResultsByPlayer((current) => ({ ...current, [presenceKey]: result }))
 
-    const timerAnterior = timersResultadoRef.current.get(presenceKey)
-    if (timerAnterior) clearTimeout(timerAnterior)
+    const previousTimer = resultTimersRef.current.get(presenceKey)
+    if (previousTimer) clearTimeout(previousTimer)
 
     const timer = setTimeout(() => {
-      setResultadosPorJogador((atual) => {
-        const { [presenceKey]: _descartado, ...resto } = atual
-        return resto
+      setResultsByPlayer((current) => {
+        const { [presenceKey]: _discarded, ...rest } = current
+        return rest
       })
-      timersResultadoRef.current.delete(presenceKey)
-    }, DURACAO_RESULTADO_MS)
-    timersResultadoRef.current.set(presenceKey, timer)
+      resultTimersRef.current.delete(presenceKey)
+    }, RESULT_DURATION_MS)
+    resultTimersRef.current.set(presenceKey, timer)
   }
 
   useEffect(() => {
-    const timers = timersResultadoRef.current
+    const timers = resultTimersRef.current
     return () => timers.forEach((timer) => clearTimeout(timer))
   }, [])
 
-  // Assim que qualquer jogador começa a rolar, some com as mensagens de
-  // resultado de todo mundo — evita ficar lendo um resultado antigo
-  // enquanto uma rolagem nova já está em andamento.
-  function limparResultados() {
-    setResultadosPorJogador({})
-    timersResultadoRef.current.forEach((timer) => clearTimeout(timer))
-    timersResultadoRef.current.clear()
+  // As soon as any player starts rolling, clear everyone's result messages —
+  // avoids showing a stale result while a new roll is already in progress.
+  function clearResults() {
+    setResultsByPlayer({})
+    resultTimersRef.current.forEach((timer) => clearTimeout(timer))
+    resultTimersRef.current.clear()
   }
 
-  const [historico, setHistorico] = useState([])
-  const [filtroData, setFiltroData] = useState('')
-  const [painelAberto, setPainelAberto] = useState(false)
-  const [statusAberto, setStatusAberto] = useState(false)
-  const [jogadoresOnline, setJogadoresOnline] = useState([])
-  const [modoRolagem, setModoRolagem] = useState('normal') // 'normal' | 'vantagem' | 'desvantagem'
-  // Efeito visual sorteado a cada Crítico — { id, tipo, presenceKey } pra
-  // permitir tocar o mesmo tipo duas vezes seguidas (id novo força o React a
-  // remontar) e ancorar o efeito na caixa de quem rolou.
-  const [efeitoCritico, setEfeitoCritico] = useState(null)
+  const [history, setHistory] = useState([])
+  const [dateFilter, setDateFilter] = useState('')
+  const [panelOpen, setPanelOpen] = useState(false)
+  const [statusOpen, setStatusOpen] = useState(false)
+  const [onlinePlayers, setOnlinePlayers] = useState([])
+  const [rollMode, setRollMode] = useState('normal') // 'normal' | 'vantagem' | 'desvantagem'
+  // Visual effect picked on every Critical — { id, type, presenceKey } to
+  // allow playing the same type twice in a row (a new id forces React to
+  // remount) and anchor the effect to the box of whoever rolled.
+  const [criticalEffect, setCriticalEffect] = useState(null)
 
-  function tocarEfeitoCritico(tipo, presenceKey) {
-    setEfeitoCritico({ id: crypto.randomUUID(), tipo, presenceKey })
+  function triggerCriticalEffect(type, presenceKey) {
+    setCriticalEffect({ id: crypto.randomUUID(), type, presenceKey })
   }
-  // Só quem tem a tag de DM pode alternar isso — pra todo mundo, fica fixo
-  // no padrão (dualidade). O valor escolhido vai no presence pra quem mais
-  // estiver na sala ver o dado certo do DM.
-  const [mecanicaSelecionada, setMecanicaSelecionada] = useState(() => mecanicaDoJogador(jogador.nome))
-  const [conectado, setConectado] = useState(true)
-  // Marcadores de personagem (PV, Esperança, Estresse, etc.) — carregados do
-  // banco por nome, editáveis livremente e sincronizados via presence, igual
-  // ao resto do perfil do jogador.
-  const [marcadores, setMarcadores] = useState(MARCADORES_PADRAO)
-  // Só começa a salvar depois que o carregamento inicial terminar — senão o
-  // efeito de salvar dispara com os valores padrão antes do fetch resolver
-  // e sobrescreve o que já estava salvo no banco.
-  const marcadoresCarregadosRef = useRef(false)
+  // Only whoever has the DM tag can toggle this — for everyone else it
+  // stays fixed on the default (duality). The chosen value goes into
+  // presence so everyone else in the room sees the DM's correct die.
+  const [selectedDiceSystem, setSelectedDiceSystem] = useState(() => defaultDiceSystemFor(player.name))
+  const [connected, setConnected] = useState(true)
+  // Character stats (HP, Hope, Stress, etc.) — loaded from the database by
+  // name, freely editable and synced via presence, just like the rest of
+  // the player's profile.
+  const [stats, setStats] = useState(DEFAULT_STATS)
+  // Only starts saving once the initial load finishes — otherwise the save
+  // effect fires with default values before the fetch resolves and
+  // overwrites what was already saved in the database.
+  const statsLoadedRef = useRef(false)
 
   useEffect(() => {
-    let ativo = true
-    marcadoresCarregadosRef.current = false
-    carregarMarcadoresDoJogador(jogador.nome).then((valores) => {
-      if (!ativo) return
-      setMarcadores(valores)
-      marcadoresCarregadosRef.current = true
+    let active = true
+    statsLoadedRef.current = false
+    loadPlayerStats(player.name).then((values) => {
+      if (!active) return
+      setStats(values)
+      statsLoadedRef.current = true
     })
     return () => {
-      ativo = false
+      active = false
     }
-  }, [jogador.nome])
+  }, [player.name])
 
   useEffect(() => {
-    if (!marcadoresCarregadosRef.current) return
-    const id = setTimeout(() => salvarMarcadoresDoJogador(jogador.nome, marcadores), 400)
+    if (!statsLoadedRef.current) return
+    const id = setTimeout(() => savePlayerStats(player.name, stats), 400)
     return () => clearTimeout(id)
-  }, [jogador.nome, marcadores])
+  }, [player.name, stats])
 
-  // Edição de verdade só acontece no modal (com botão de Salvar) — aqui só
-  // trocamos o objeto inteiro de uma vez.
-  function salvarMarcadoresCompletos(novosValores) {
-    setMarcadores(novosValores)
+  // Real editing only happens in the modal (with an explicit Save button) —
+  // here we just swap the whole object at once.
+  function saveFullStats(newValues) {
+    setStats(newValues)
   }
 
-  // Botões de +/- (Esperança/Estresse/Fadiga) na caixa de dados — ação
-  // rápida e direta, mas com cooldown de 5s por marcador (compartilhado
-  // entre somar e subtrair) pra não afogar o servidor se várias pessoas
-  // ficarem clicando junto.
-  const COOLDOWN_AJUSTE_MS = 5000
-  const [cooldownsAjuste, setCooldownsAjuste] = useState({})
+  // +/- buttons (Hope/Stress/Fatigue) on the dice box — quick, direct
+  // action, but with a 5s cooldown per stat (shared between add and
+  // subtract) to avoid flooding the server if several people click at once.
+  const ADJUST_COOLDOWN_MS = 5000
+  const [adjustCooldowns, setAdjustCooldowns] = useState({})
 
-  function podeAjustarMarcador(campo) {
-    return (cooldownsAjuste[campo] ?? 0) <= Date.now()
+  function canAdjustStat(field) {
+    return (adjustCooldowns[field] ?? 0) <= Date.now()
   }
 
-  function ajustarMarcador(campo, delta) {
-    if (!podeAjustarMarcador(campo)) return
-    setMarcadores((atual) => ({ ...atual, [campo]: Math.max(0, atual[campo] + delta) }))
-    setCooldownsAjuste((atual) => ({ ...atual, [campo]: Date.now() + COOLDOWN_AJUSTE_MS }))
+  function adjustStat(field, delta) {
+    if (!canAdjustStat(field)) return
+    setStats((current) => ({ ...current, [field]: Math.max(0, current[field] + delta) }))
+    setAdjustCooldowns((current) => ({ ...current, [field]: Date.now() + ADJUST_COOLDOWN_MS }))
     setTimeout(() => {
-      setCooldownsAjuste((atual) => ({ ...atual, [campo]: 0 }))
-    }, COOLDOWN_AJUSTE_MS)
+      setAdjustCooldowns((current) => ({ ...current, [field]: 0 }))
+    }, ADJUST_COOLDOWN_MS)
   }
 
   useEffect(() => {
-    let ativo = true
+    let active = true
 
-    async function carregarHistorico() {
+    async function loadHistory() {
       const { data, error } = await supabase
         .from('rolls')
         .select('*')
-        .eq('room_id', sala.roomId)
+        .eq('room_id', room.roomId)
         .order('criado_em', { ascending: false })
         .limit(30)
 
-      if (ativo && !error && data) {
-        setHistorico(data.map(linhaParaHistorico))
+      if (active && !error && data) {
+        setHistory(data.map(rowToHistoryItem))
       }
     }
 
-    carregarHistorico()
+    loadHistory()
 
-    const canal = supabase.channel(`room:${sala.roomId}`, {
+    const channel = supabase.channel(`room:${room.roomId}`, {
       config: { presence: { key: presenceKeyRef.current } },
     })
 
-    canal
+    channel
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'rolls', filter: `room_id=eq.${sala.roomId}` },
+        { event: 'INSERT', schema: 'public', table: 'rolls', filter: `room_id=eq.${room.roomId}` },
         (payload) => {
-          setHistorico((atual) => {
-            if (atual.some((item) => item.id === payload.new.id)) return atual
-            return [linhaParaHistorico(payload.new), ...atual]
+          setHistory((current) => {
+            if (current.some((item) => item.id === payload.new.id)) return current
+            return [rowToHistoryItem(payload.new), ...current]
           })
         },
       )
       .on(
         'postgres_changes',
-        { event: 'DELETE', schema: 'public', table: 'rolls', filter: `room_id=eq.${sala.roomId}` },
+        { event: 'DELETE', schema: 'public', table: 'rolls', filter: `room_id=eq.${room.roomId}` },
         (payload) => {
-          setHistorico((atual) => atual.filter((item) => item.id !== payload.old.id))
+          setHistory((current) => current.filter((item) => item.id !== payload.old.id))
         },
       )
-      .on('broadcast', { event: 'rolando' }, ({ payload }) => {
-        limparResultados()
+      .on('broadcast', { event: 'rolling' }, ({ payload }) => {
+        clearResults()
         if (payload.presenceKey === presenceKeyRef.current) return
-        diceRefsRef.current.get(payload.presenceKey)?.iniciarGiro(payload.modo)
+        diceSetRefsRef.current.get(payload.presenceKey)?.startSpin(payload.mode)
       })
-      .on('broadcast', { event: 'resultado' }, ({ payload }) => {
-        definirResultadoDoJogador(payload.presenceKey, {
-          vencedor: payload.vencedor,
+      .on('broadcast', { event: 'result' }, ({ payload }) => {
+        setPlayerResult(payload.presenceKey, {
+          winner: payload.winner,
           hope: payload.hope,
           fear: payload.fear,
-          modificador: payload.modificador,
+          modifier: payload.modifier,
         })
         if (payload.presenceKey === presenceKeyRef.current) return
-        diceRefsRef.current
+        diceSetRefsRef.current
           .get(payload.presenceKey)
-          ?.finalizarGiro(payload.hope, payload.fear, payload.modificador)
-        // O efeito de Crítico já vem sorteado por quem rolou — todo mundo na
-        // sala vê o mesmo efeito, não um sorteio independente por cliente.
-        if (payload.efeito) tocarEfeitoCritico(payload.efeito, payload.presenceKey)
+          ?.finishSpin(payload.hope, payload.fear, payload.modifier)
+        // The Critical effect already comes picked by whoever rolled —
+        // everyone in the room sees the same effect, not an independent
+        // pick per client.
+        if (payload.effect) triggerCriticalEffect(payload.effect, payload.presenceKey)
       })
       .on('presence', { event: 'sync' }, () => {
-        const estado = canal.presenceState()
-        // Cada track() gera uma nova "meta" para a mesma chave; enquanto o
-        // servidor não confirma a saída da anterior, presenceState() pode
-        // listar as duas simultaneamente. Ficamos só com a mais recente
-        // pra não duplicar o jogador na tela.
-        const lista = Object.entries(estado).map(([presenceKey, metas]) => ({
+        const state = channel.presenceState()
+        // Every track() generates a new "meta" for the same key; until the
+        // server confirms the previous one left, presenceState() can list
+        // both at once. We keep only the most recent one to avoid
+        // duplicating the player on screen.
+        const list = Object.entries(state).map(([presenceKey, metas]) => ({
           presenceKey,
           ...metas[metas.length - 1],
         }))
-        setJogadoresOnline(lista)
+        setOnlinePlayers(list)
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
-          setConectado(true)
-          await canal.track({
-            nome: jogador.nome,
-            cor: jogador.cor,
-            mecanica: mecanicaSelecionada,
-            ...marcadores,
-            corHope: jogador.corHope,
-            corFear: jogador.corFear,
-            corTextoHope: jogador.corTextoHope,
-            corTextoFear: jogador.corTextoFear,
-            corBordaHope: jogador.corBordaHope,
-            corBordaFear: jogador.corBordaFear,
-            temaHope: jogador.temaHope,
-            temaFear: jogador.temaFear,
-            corD20: jogador.corD20,
-            corBordaD20: jogador.corBordaD20,
-            corTextoD20: jogador.corTextoD20,
-            temaD20: jogador.temaD20,
-            corD20Extra: jogador.corD20Extra,
-            corBordaD20Extra: jogador.corBordaD20Extra,
-            corTextoD20Extra: jogador.corTextoD20Extra,
-            temaD20Extra: jogador.temaD20Extra,
+          setConnected(true)
+          await channel.track({
+            name: player.name,
+            color: player.color,
+            diceSystem: selectedDiceSystem,
+            ...stats,
+            hopeColor: player.hopeColor,
+            fearColor: player.fearColor,
+            hopeTextColor: player.hopeTextColor,
+            fearTextColor: player.fearTextColor,
+            hopeBorderColor: player.hopeBorderColor,
+            fearBorderColor: player.fearBorderColor,
+            hopeTheme: player.hopeTheme,
+            fearTheme: player.fearTheme,
+            d20Color: player.d20Color,
+            d20BorderColor: player.d20BorderColor,
+            d20TextColor: player.d20TextColor,
+            d20Theme: player.d20Theme,
+            d20ExtraColor: player.d20ExtraColor,
+            d20ExtraBorderColor: player.d20ExtraBorderColor,
+            d20ExtraTextColor: player.d20ExtraTextColor,
+            d20ExtraTheme: player.d20ExtraTheme,
           })
         } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-          console.warn('Conexão da sala perdida:', status)
-          setConectado(false)
+          console.warn('Room connection lost:', status)
+          setConnected(false)
         }
       })
 
-    canalRef.current = canal
+    channelRef.current = channel
 
     return () => {
-      ativo = false
-      canalRef.current = null
-      supabase.removeChannel(canal)
+      active = false
+      channelRef.current = null
+      supabase.removeChannel(channel)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sala.roomId])
+  }, [room.roomId])
 
   useEffect(() => {
     const id = setTimeout(() => {
-      canalRef.current?.track({
-        nome: jogador.nome,
-        cor: jogador.cor,
-        mecanica: mecanicaSelecionada,
-        ...marcadores,
-        corHope: jogador.corHope,
-        corFear: jogador.corFear,
-        corTextoHope: jogador.corTextoHope,
-        corTextoFear: jogador.corTextoFear,
-        corBordaHope: jogador.corBordaHope,
-        corBordaFear: jogador.corBordaFear,
-        temaHope: jogador.temaHope,
-        temaFear: jogador.temaFear,
-        corD20: jogador.corD20,
-        corBordaD20: jogador.corBordaD20,
-        corTextoD20: jogador.corTextoD20,
-        temaD20: jogador.temaD20,
-        corD20Extra: jogador.corD20Extra,
-        corBordaD20Extra: jogador.corBordaD20Extra,
-        corTextoD20Extra: jogador.corTextoD20Extra,
-        temaD20Extra: jogador.temaD20Extra,
+      channelRef.current?.track({
+        name: player.name,
+        color: player.color,
+        diceSystem: selectedDiceSystem,
+        ...stats,
+        hopeColor: player.hopeColor,
+        fearColor: player.fearColor,
+        hopeTextColor: player.hopeTextColor,
+        fearTextColor: player.fearTextColor,
+        hopeBorderColor: player.hopeBorderColor,
+        fearBorderColor: player.fearBorderColor,
+        hopeTheme: player.hopeTheme,
+        fearTheme: player.fearTheme,
+        d20Color: player.d20Color,
+        d20BorderColor: player.d20BorderColor,
+        d20TextColor: player.d20TextColor,
+        d20Theme: player.d20Theme,
+        d20ExtraColor: player.d20ExtraColor,
+        d20ExtraBorderColor: player.d20ExtraBorderColor,
+        d20ExtraTextColor: player.d20ExtraTextColor,
+        d20ExtraTheme: player.d20ExtraTheme,
       })
     }, 150)
     return () => clearTimeout(id)
   }, [
-    jogador.nome,
-    jogador.cor,
-    mecanicaSelecionada,
-    marcadores,
-    jogador.corHope,
-    jogador.corFear,
-    jogador.corTextoHope,
-    jogador.corTextoFear,
-    jogador.corBordaHope,
-    jogador.corBordaFear,
-    jogador.temaHope,
-    jogador.temaFear,
-    jogador.corD20,
-    jogador.corBordaD20,
-    jogador.corTextoD20,
-    jogador.temaD20,
-    jogador.corD20Extra,
-    jogador.corBordaD20Extra,
-    jogador.corTextoD20Extra,
-    jogador.temaD20Extra,
+    player.name,
+    player.color,
+    selectedDiceSystem,
+    stats,
+    player.hopeColor,
+    player.fearColor,
+    player.hopeTextColor,
+    player.fearTextColor,
+    player.hopeBorderColor,
+    player.fearBorderColor,
+    player.hopeTheme,
+    player.fearTheme,
+    player.d20Color,
+    player.d20BorderColor,
+    player.d20TextColor,
+    player.d20Theme,
+    player.d20ExtraColor,
+    player.d20ExtraBorderColor,
+    player.d20ExtraTextColor,
+    player.d20ExtraTheme,
   ])
 
-  function registrarRefDados(presenceKey, node) {
-    if (node) diceRefsRef.current.set(presenceKey, node)
-    else diceRefsRef.current.delete(presenceKey)
+  function registerDiceRef(presenceKey, node) {
+    if (node) diceSetRefsRef.current.set(presenceKey, node)
+    else diceSetRefsRef.current.delete(presenceKey)
   }
 
-  async function resetarHistorico() {
-    const confirmado = window.confirm('Apagar todo o histórico desta sala para todos os jogadores?')
-    if (!confirmado) return
-    const { error } = await supabase.from('rolls').delete().eq('room_id', sala.roomId)
+  async function resetHistory() {
+    const confirmed = window.confirm('Apagar todo o histórico desta sala para todos os jogadores?')
+    if (!confirmed) return
+    const { error } = await supabase.from('rolls').delete().eq('room_id', room.roomId)
     if (error) {
-      console.error('Erro ao resetar histórico:', error)
+      console.error('Error resetting history:', error)
       return
     }
-    setHistorico([])
+    setHistory([])
   }
 
-  async function registrarRolagem(resultado, modificador, mecanica) {
+  async function recordRoll(result, modifier, diceSystem) {
     const total =
-      mecanica === MECANICA_D20 ? resultado.hope : calcularTotal(resultado.hope, resultado.fear, modificador)
-    // A tabela só tem cor_hope/cor_fear — guardamos aí a cor do slot
-    // principal/secundário resolvida pra mecânica em uso (dualidade ou d20),
-    // pra o histórico continuar colorindo certo independente do jogador.
-    const principal = estiloPrincipal(jogador, mecanica)
-    const secundaria = estiloSecundario(jogador, mecanica)
+      diceSystem === DICE_SYSTEM_D20 ? result.hope : calculateTotal(result.hope, result.fear, modifier)
+    // The table only has cor_hope/cor_fear — we store the primary/secondary
+    // slot color resolved for the dice system in use (duality or d20), so
+    // the history keeps coloring correctly regardless of the player.
+    const primary = primaryStyle(player, diceSystem)
+    const secondary = secondaryStyle(player, diceSystem)
     const { error } = await supabase.from('rolls').insert({
-      room_id: sala.roomId,
-      jogador: jogador.nome,
-      cor: jogador.cor,
-      cor_hope: principal.cor,
-      cor_fear: secundaria.cor,
-      dado_hope: resultado.hope,
-      dado_fear: resultado.fear,
-      resultado: textoResultado(resultado),
-      vencedor: resultado.vencedor,
+      room_id: room.roomId,
+      jogador: player.name,
+      cor: player.color,
+      cor_hope: primary.color,
+      cor_fear: secondary.color,
+      dado_hope: result.hope,
+      dado_fear: result.fear,
+      resultado: diceResultText(result),
+      vencedor: result.winner,
       total,
-      modificador_tipo: modificador?.tipo ?? null,
-      modificador_valor: modificador?.valor ?? null,
+      modificador_tipo: modifier?.type ?? null,
+      modificador_valor: modifier?.value ?? null,
     })
-    if (error) console.error('Erro ao registrar rolagem:', error)
+    if (error) console.error('Error recording roll:', error)
   }
 
-  async function rolar(forcarValores) {
-    const minhaChave = presenceKeyRef.current
-    const meuConjunto = diceRefsRef.current.get(minhaChave)
-    if (rolando || !meuConjunto) return
+  async function roll(forcedValues) {
+    const myKey = presenceKeyRef.current
+    const myDiceSet = diceSetRefsRef.current.get(myKey)
+    if (rolling || !myDiceSet) return
 
-    setRolando(true)
-    setUltimoResultado(null)
-    limparResultados()
+    setRolling(true)
+    setLastResult(null)
+    clearResults()
 
-    canalRef.current?.send({
+    channelRef.current?.send({
       type: 'broadcast',
-      event: 'rolando',
-      payload: { presenceKey: minhaChave, modo: modoRolagem },
+      event: 'rolling',
+      payload: { presenceKey: myKey, mode: rollMode },
     })
 
-    const mecanica = mecanicaSelecionada
+    const diceSystem = selectedDiceSystem
 
-    let resultadoBruto
-    if (mecanica === MECANICA_D20) {
-      resultadoBruto = await meuConjunto.rolarPropria(modoRolagem)
-    } else if (forcarValores) {
-      resultadoBruto = await meuConjunto.rolarPropriaParaValores(forcarValores.hope, forcarValores.fear, modoRolagem)
-    } else if (jogador.nome === 'Samuel') {
-      // Vantagem do Samuel: decide ANTES de girar se o resultado (que seria
-      // "com Medo") vira "com Esperança" — 20% de chance, trocando qual
-      // dado mostra qual número (o total/soma não muda). Os dados já giram
-      // direto pro valor final: nunca revelam o valor "de verdade" primeiro
-      // pra depois trocar, senão fica visível o "pulo" do número.
-      const { hope: hopeSorteado, fear: fearSorteado } = rolarDados()
-      const trocar = fearSorteado > hopeSorteado && Math.random() < 0.2
-      const hopeAlvo = trocar ? fearSorteado : hopeSorteado
-      const fearAlvo = trocar ? hopeSorteado : fearSorteado
-      resultadoBruto = await meuConjunto.rolarPropriaParaValores(hopeAlvo, fearAlvo, modoRolagem)
+    let rawResult
+    if (diceSystem === DICE_SYSTEM_D20) {
+      rawResult = await myDiceSet.rollOwn(rollMode)
+    } else if (forcedValues) {
+      rawResult = await myDiceSet.rollOwnToValues(forcedValues.hope, forcedValues.fear, rollMode)
+    } else if (player.name === 'Samuel') {
+      // Samuel's advantage: decides BEFORE spinning whether a result that
+      // would be "with Fear" becomes "with Hope" — 20% chance, swapping
+      // which die shows which number (the total never changes). The dice
+      // already spin straight to the final value: the "real" value is
+      // never revealed first only to be swapped, so the number never
+      // visibly "jumps".
+      const { hope: rolledHope, fear: rolledFear } = rollDice()
+      const swap = rolledFear > rolledHope && Math.random() < 0.2
+      const targetHope = swap ? rolledFear : rolledHope
+      const targetFear = swap ? rolledHope : rolledFear
+      rawResult = await myDiceSet.rollOwnToValues(targetHope, targetFear, rollMode)
     } else {
-      resultadoBruto = await meuConjunto.rolarPropria(modoRolagem)
+      rawResult = await myDiceSet.rollOwn(rollMode)
     }
 
-    const { modificador } = resultadoBruto
-    const { hope, fear } = resultadoBruto
-    const resultado = mecanica === MECANICA_D20 ? calcularResultadoD20(hope, fear) : calcularResultado(hope, fear)
-    const efeito = ehCritico(resultado.vencedor) ? sortearEfeitoCritico() : null
+    const { modifier } = rawResult
+    const { hope, fear } = rawResult
+    const result = diceSystem === DICE_SYSTEM_D20 ? calculateD20Result(hope, fear) : calculateResult(hope, fear)
+    const effect = isCritical(result.winner) ? pickCriticalEffect() : null
 
-    setUltimoResultado({ ...resultado, modificador })
-    definirResultadoDoJogador(minhaChave, {
-      vencedor: resultado.vencedor,
-      hope: resultado.hope,
-      fear: resultado.fear,
-      modificador,
+    setLastResult({ ...result, modifier })
+    setPlayerResult(myKey, {
+      winner: result.winner,
+      hope: result.hope,
+      fear: result.fear,
+      modifier,
     })
-    setRolando(false)
-    if (efeito) tocarEfeitoCritico(efeito, minhaChave)
+    setRolling(false)
+    if (effect) triggerCriticalEffect(effect, myKey)
 
-    canalRef.current?.send({
+    channelRef.current?.send({
       type: 'broadcast',
-      event: 'resultado',
+      event: 'result',
       payload: {
-        presenceKey: minhaChave,
-        vencedor: resultado.vencedor,
-        hope: resultado.hope,
-        fear: resultado.fear,
-        modificador,
-        efeito,
+        presenceKey: myKey,
+        winner: result.winner,
+        hope: result.hope,
+        fear: result.fear,
+        modifier,
+        effect,
       },
     })
 
-    registrarRolagem(resultado, modificador, mecanica)
+    recordRoll(result, modifier, diceSystem)
   }
 
-  const minhaMecanica = mecanicaSelecionada
-  const historicoFiltrado = filtroData ? historico.filter((item) => item.dataISO === filtroData) : historico
+  const myDiceSystem = selectedDiceSystem
+  const filteredHistory = dateFilter ? history.filter((item) => item.dateISO === dateFilter) : history
 
   return (
     <section className="room">
       <header className="room-header">
-        <div className="sala-titulo">
-          <h1 className="nome-mesa">Age of Umbra</h1>
-          <p className="sala-subtitulo">
-            <strong>{sala.codigo}</strong>
+        <div className="room-title">
+          <h1 className="table-name">Age of Umbra</h1>
+          <p className="room-subtitle">
+            <strong>{room.code}</strong>
           </p>
         </div>
-        <button
-          type="button"
-          className="secundario botao-config"
-          onClick={() => window.location.reload()}
-          aria-label="Atualizar sala"
-          title="Recarregar sala"
-        >
+        <IconButton onClick={() => window.location.reload()} label="Atualizar sala" title="Recarregar sala">
           ⟳
-        </button>
-        <button
-          type="button"
-          className="secundario botao-config"
-          onClick={() => setPainelAberto((v) => !v)}
-          aria-label="Configurações"
-        >
+        </IconButton>
+        <IconButton onClick={() => setPanelOpen((v) => !v)} label="Configurações">
           ⚙
-        </button>
-        <button
-          type="button"
-          className="secundario botao-config"
-          onClick={() => setStatusAberto((v) => !v)}
-          aria-label="Status da mesa"
-          title="Ver status de todo mundo"
-        >
+        </IconButton>
+        <IconButton onClick={() => setStatusOpen((v) => !v)} label="Status da mesa" title="Ver status de todo mundo">
           ☰
-        </button>
+        </IconButton>
       </header>
 
-      {!conectado && (
-        <div className="aviso aviso--erro">
+      {!connected && (
+        <div className="notice notice--error">
           Conexão com a sala perdida.{' '}
           <button type="button" onClick={() => window.location.reload()}>
             Atualizar
@@ -517,161 +504,144 @@ function Room({ sala, jogador, onAtualizarJogador }) {
         </div>
       )}
 
-      {painelAberto && (
+      {panelOpen && (
         <ColorSettingsPanel
-          jogador={jogador}
-          mecanica={minhaMecanica}
-          marcadores={marcadores}
-          onAtualizarJogador={onAtualizarJogador}
-          onSalvarMarcadores={salvarMarcadoresCompletos}
-          onFechar={() => setPainelAberto(false)}
+          player={player}
+          diceSystem={myDiceSystem}
+          stats={stats}
+          onUpdatePlayer={onUpdatePlayer}
+          onSaveStats={saveFullStats}
+          onClose={() => setPanelOpen(false)}
         />
       )}
 
-      <div className="mesa-dados">
-        {jogadoresOnline.map((jg) => {
-          const mecanicaJg = jg.mecanica ?? mecanicaDoJogador(jg.nome)
-          const principal = estiloPrincipal(jg, mecanicaJg)
-          const secundaria = estiloSecundario(jg, mecanicaJg)
-          const resultadoJg = resultadosPorJogador[jg.presenceKey]
-          const souEu = jg.presenceKey === presenceKeyRef.current
+      <div className="dice-table">
+        {onlinePlayers.map((p) => {
+          const playerDiceSystem = p.diceSystem ?? defaultDiceSystemFor(p.name)
+          const primary = primaryStyle(p, playerDiceSystem)
+          const secondary = secondaryStyle(p, playerDiceSystem)
+          const playerResult = resultsByPlayer[p.presenceKey]
+          const isMe = p.presenceKey === presenceKeyRef.current
           return (
             <PlayerDiceSet
-              key={jg.presenceKey}
-              ref={(node) => registrarRefDados(jg.presenceKey, node)}
-              nome={jg.nome}
-              cor={jg.cor}
-              corPrincipal={principal.cor}
-              corBordaPrincipal={principal.borda}
-              corTextoPrincipal={principal.texto}
-              temaPrincipal={principal.tema}
-              corSecundaria={secundaria.cor}
-              corBordaSecundaria={secundaria.borda}
-              corTextoSecundaria={secundaria.texto}
-              temaSecundaria={secundaria.tema}
-              mecanica={mecanicaJg}
-              destaque={souEu}
-              resultadoTexto={resultadoJg ? textoResultado(resultadoJg) : null}
-              resultadoCor={
-                resultadoJg
-                  ? corResultado(resultadoJg.vencedor, { corHope: principal.cor, corFear: secundaria.cor })
+              key={p.presenceKey}
+              ref={(node) => registerDiceRef(p.presenceKey, node)}
+              name={p.name}
+              color={p.color}
+              primaryColor={primary.color}
+              primaryBorderColor={primary.border}
+              primaryTextColor={primary.text}
+              primaryTheme={primary.theme}
+              secondaryColor={secondary.color}
+              secondaryBorderColor={secondary.border}
+              secondaryTextColor={secondary.text}
+              secondaryTheme={secondary.theme}
+              diceSystem={playerDiceSystem}
+              isYou={isMe}
+              resultText={playerResult ? diceResultText(playerResult) : null}
+              resultColor={
+                playerResult
+                  ? resultColor(playerResult.winner, { hopeColor: primary.color, fearColor: secondary.color })
                   : null
               }
-              marcadores={souEu ? marcadores : marcadoresDoPresence(jg)}
-              editavelMarcadores={souEu}
-              podeAjustarMarcador={podeAjustarMarcador}
-              onAjustarMarcador={ajustarMarcador}
-              efeitoCritico={efeitoCritico?.presenceKey === jg.presenceKey ? efeitoCritico : null}
-              onFimEfeitoCritico={() => setEfeitoCritico(null)}
-              onRolar={souEu ? () => rolar() : null}
-              rolando={souEu ? rolando : false}
+              stats={isMe ? stats : statsFromPresence(p)}
+              statsEditable={isMe}
+              canAdjustStat={canAdjustStat}
+              onAdjustStat={adjustStat}
+              criticalEffect={criticalEffect?.presenceKey === p.presenceKey ? criticalEffect : null}
+              onCriticalEffectEnd={() => setCriticalEffect(null)}
+              onRoll={isMe ? () => roll() : null}
+              rolling={isMe ? rolling : false}
             />
           )
         })}
       </div>
 
-      {statusAberto && (
-        <ModalStatus
-          jogadores={jogadoresOnline}
-          meuPresenceKey={presenceKeyRef.current}
-          obterMarcadores={(jg) => (jg.presenceKey === presenceKeyRef.current ? marcadores : marcadoresDoPresence(jg))}
-          onFechar={() => setStatusAberto(false)}
+      {statusOpen && (
+        <PartyStatusModal
+          players={onlinePlayers}
+          myPresenceKey={presenceKeyRef.current}
+          getStats={(p) => (p.presenceKey === presenceKeyRef.current ? stats : statsFromPresence(p))}
+          onClose={() => setStatusOpen(false)}
         />
       )}
 
-      {ehDM(jogador.nome) && (
-        <div className="modo-rolagem">
-          <button
-            type="button"
-            className={`pill${mecanicaSelecionada === MECANICA_D20 ? ' pill--ativa' : ''}`}
-            onClick={() => setMecanicaSelecionada(MECANICA_D20)}
-          >
+      {isDM(player.name) && (
+        <PillGroup>
+          <Pill active={selectedDiceSystem === DICE_SYSTEM_D20} onClick={() => setSelectedDiceSystem(DICE_SYSTEM_D20)}>
             d20
-          </button>
-          <button
-            type="button"
-            className={`pill${mecanicaSelecionada === MECANICA_DUALIDADE ? ' pill--ativa' : ''}`}
-            onClick={() => setMecanicaSelecionada(MECANICA_DUALIDADE)}
+          </Pill>
+          <Pill
+            active={selectedDiceSystem === DICE_SYSTEM_DUALITY}
+            onClick={() => setSelectedDiceSystem(DICE_SYSTEM_DUALITY)}
           >
             2d12
-          </button>
-        </div>
+          </Pill>
+        </PillGroup>
       )}
 
-      <div className="modo-rolagem">
-        <button
-          type="button"
-          className={`pill${modoRolagem === 'normal' ? ' pill--ativa' : ''}`}
-          onClick={() => setModoRolagem('normal')}
-        >
+      <PillGroup>
+        <Pill active={rollMode === 'normal'} onClick={() => setRollMode('normal')}>
           Normal
-        </button>
-        <button
-          type="button"
-          className={`pill${modoRolagem === 'vantagem' ? ' pill--ativa' : ''}`}
-          onClick={() => setModoRolagem('vantagem')}
-        >
+        </Pill>
+        <Pill active={rollMode === 'vantagem'} onClick={() => setRollMode('vantagem')}>
           Vantagem
-        </button>
-        <button
-          type="button"
-          className={`pill${modoRolagem === 'desvantagem' ? ' pill--ativa' : ''}`}
-          onClick={() => setModoRolagem('desvantagem')}
-        >
+        </Pill>
+        <Pill active={rollMode === 'desvantagem'} onClick={() => setRollMode('desvantagem')}>
           Desvantagem
-        </button>
-      </div>
+        </Pill>
+      </PillGroup>
 
-      <button type="button" className="botao-rolar" onClick={() => rolar()} disabled={rolando}>
-        {rolando ? 'Rolando...' : 'Rolar'}
+      <button type="button" className="roll-button" onClick={() => roll()} disabled={rolling}>
+        {rolling ? 'Rolando...' : 'Rolar'}
       </button>
 
-      {jogador.nome === 'Samuel' && minhaMecanica !== MECANICA_D20 && (
+      {player.name === 'Samuel' && myDiceSystem !== DICE_SYSTEM_D20 && (
         <button
           type="button"
           className="secundario"
-          onClick={() => rolar({ hope: 4, fear: 4 })}
-          disabled={rolando}
+          onClick={() => roll({ hope: 4, fear: 4 })}
+          disabled={rolling}
         >
           Forçar 4:4
         </button>
       )}
 
-      {ultimoResultado && (
+      {lastResult && (
         <p
-          className={`resultado${ehVencedorD20(ultimoResultado.vencedor) ? ' resultado--d20' : ''}`}
+          className={`result${isD20Winner(lastResult.winner) ? ' result--d20' : ''}`}
           style={{
-            color: corResultado(ultimoResultado.vencedor, {
-              corHope: estiloPrincipal(jogador, minhaMecanica).cor,
-              corFear: estiloSecundario(jogador, minhaMecanica).cor,
+            color: resultColor(lastResult.winner, {
+              hopeColor: primaryStyle(player, myDiceSystem).color,
+              fearColor: secondaryStyle(player, myDiceSystem).color,
             }),
           }}
         >
-          {textoResultado(ultimoResultado)}
+          {diceResultText(lastResult)}
         </p>
       )}
 
-      <div className="historico">
-        <div className="historico-cabecalho">
+      <div className="history">
+        <div className="history-header">
           <h2>Histórico</h2>
           <button
             type="button"
             className="secundario"
-            onClick={resetarHistorico}
-            disabled={jogador.nome !== 'Samuel'}
+            onClick={resetHistory}
+            disabled={player.name !== 'Samuel'}
           >
             Resetar
           </button>
         </div>
 
-        {MOSTRAR_FILTRO_DATA && (
-          <div className="historico-filtros">
-            <label className="historico-filtro-data">
+        {SHOW_DATE_FILTER && (
+          <div className="history-filters">
+            <label className="history-filter-date">
               Filtrar por data
-              <input type="date" value={filtroData} onChange={(e) => setFiltroData(e.target.value)} />
+              <input type="date" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} />
             </label>
-            {filtroData && (
-              <button type="button" className="secundario" onClick={() => setFiltroData('')}>
+            {dateFilter && (
+              <button type="button" className="secundario" onClick={() => setDateFilter('')}>
                 Limpar filtro
               </button>
             )}
@@ -679,32 +649,32 @@ function Room({ sala, jogador, onAtualizarJogador }) {
         )}
 
         <ul>
-          {filtroData && historicoFiltrado.length === 0 && (
-            <li className="historico-vazio">Nenhuma rolagem nesse dia.</li>
+          {dateFilter && filteredHistory.length === 0 && (
+            <li className="history-empty">Nenhuma rolagem nesse dia.</li>
           )}
-          {historicoFiltrado.map((item) => (
-            <li key={item.id} className="historico-item">
-              <span className="historico-horario">{item.horario}</span>
-              <span className="historico-jogador" style={{ color: item.cor }}>
-                {item.jogador}
+          {filteredHistory.map((item) => (
+            <li key={item.id} className="history-item">
+              <span className="history-time">{item.time}</span>
+              <span className="history-player" style={{ color: item.color }}>
+                {item.player}
               </span>
-              <span className="historico-dados">
+              <span className="history-dice">
                 {item.hope} / {item.fear}
-                {item.modificador && (
-                  <span className="historico-modificador">
-                    {item.modificador.valor != null
-                      ? `${item.modificador.tipo === 'vantagem' ? '+' : '−'}d6(${item.modificador.valor})`
-                      : item.modificador.tipo === 'vantagem'
+                {item.modifier && (
+                  <span className="history-modifier">
+                    {item.modifier.value != null
+                      ? `${item.modifier.type === 'vantagem' ? '+' : '−'}d6(${item.modifier.value})`
+                      : item.modifier.type === 'vantagem'
                         ? 'Vantagem'
                         : 'Desvantagem'}
                   </span>
                 )}
               </span>
               <span
-                className={`historico-resultado${ehVencedorD20(item.vencedor) ? ' historico-resultado--d20' : ''}`}
-                style={{ color: corResultado(item.vencedor, item) }}
+                className={`history-result${isD20Winner(item.winner) ? ' history-result--d20' : ''}`}
+                style={{ color: resultColor(item.winner, item) }}
               >
-                {textoResultado(item)}
+                {diceResultText(item)}
               </span>
             </li>
           ))}
