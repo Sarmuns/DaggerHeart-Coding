@@ -16,6 +16,7 @@ export function MarcadorSimples({ label, valor, editavel, onAlterar }) {
         type="number"
         value={valor}
         disabled={!editavel}
+        onFocus={(e) => e.target.select()}
         onChange={(e) => onAlterar(paraNumero(e.target.value))}
       />
     </label>
@@ -32,6 +33,7 @@ export function MarcadorTrack({ label, valor, max, editavel, onAlterarValor, onA
           type="number"
           value={valor}
           disabled={!editavel}
+          onFocus={(e) => e.target.select()}
           onChange={(e) => onAlterarValor(paraNumero(e.target.value))}
         />
         <span className="marcador-track-separador">/</span>
@@ -39,6 +41,7 @@ export function MarcadorTrack({ label, valor, max, editavel, onAlterarValor, onA
           type="number"
           value={max}
           disabled={!editavel}
+          onFocus={(e) => e.target.select()}
           onChange={(e) => onAlterarMax(paraNumero(e.target.value))}
         />
       </div>
@@ -112,10 +115,14 @@ function LinhaTrack({ label, valor, max, editavel, podeAjustar, onAjustar }) {
             -
           </button>
           <input
-            type="number"
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
             min={1}
             max={limite}
             value={quantidade}
+            onFocus={(e) => e.target.select()}
+            onClick={(e) => e.target.select()}
             onChange={(e) => setQuantidade(Math.min(Math.max(1, paraNumero(e.target.value)), limite))}
           />
         </div>

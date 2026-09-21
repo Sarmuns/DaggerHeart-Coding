@@ -44,6 +44,8 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
     onAjustarMarcador,
     efeitoCritico,
     onFimEfeitoCritico,
+    onRolar,
+    rolando,
   },
   ref,
 ) {
@@ -434,6 +436,18 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
           podeAjustar={podeAjustarMarcador}
           onAjustar={onAjustarMarcador}
         />
+      )}
+      {onRolar && (
+        <button
+          type="button"
+          className="botao-rolar-discreto"
+          onClick={onRolar}
+          disabled={rolando}
+          title="Rolar"
+          aria-label="Rolar"
+        >
+          {rolando ? '...' : '🎲 Rolar'}
+        </button>
       )}
       {resultadoTexto && (
         <p

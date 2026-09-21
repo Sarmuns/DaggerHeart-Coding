@@ -563,6 +563,8 @@ function Room({ sala, jogador, onAtualizarJogador }) {
               onAjustarMarcador={ajustarMarcador}
               efeitoCritico={efeitoCritico?.presenceKey === jg.presenceKey ? efeitoCritico : null}
               onFimEfeitoCritico={() => setEfeitoCritico(null)}
+              onRolar={souEu ? () => rolar() : null}
+              rolando={souEu ? rolando : false}
             />
           )
         })}
