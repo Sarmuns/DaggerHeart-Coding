@@ -20,6 +20,7 @@ import { DEFAULT_STATS, statsFromPresence } from '../utils/playerStats'
 import { loadPlayerStats, savePlayerStats } from '../utils/playerStatsDb'
 import { isCritical, pickCriticalEffect } from '../utils/criticalEffects'
 import ColorSettingsPanel from './ColorSettingsPanel'
+import Icon from './Icon'
 import IconButton from './IconButton'
 import PartyStatusModal from './PartyStatusModal'
 import { Pill, PillGroup } from './Pill'
@@ -485,13 +486,13 @@ function Room({ room, player, onUpdatePlayer }) {
           </p>
         </div>
         <IconButton onClick={() => window.location.reload()} label="Atualizar sala" title="Recarregar sala">
-          ⟳
+          <Icon name="refresh" />
         </IconButton>
-        <IconButton onClick={() => setPanelOpen((v) => !v)} label="Configurações">
-          ⚙
+        <IconButton onClick={() => setPanelOpen((v) => !v)} label="Configurações" title="Configurações">
+          <Icon name="gear" />
         </IconButton>
         <IconButton onClick={() => setStatusOpen((v) => !v)} label="Status da mesa" title="Ver status de todo mundo">
-          ☰
+          <Icon name="list" />
         </IconButton>
       </header>
 
@@ -653,7 +654,7 @@ function Room({ room, player, onUpdatePlayer }) {
             <li className="history-empty">Nenhuma rolagem nesse dia.</li>
           )}
           {filteredHistory.map((item) => (
-            <li key={item.id} className="history-item">
+            <li key={item.id} className="history-item" style={{ borderLeftColor: item.color }}>
               <span className="history-time">{item.time}</span>
               <span className="history-player" style={{ color: item.color }}>
                 {item.player}

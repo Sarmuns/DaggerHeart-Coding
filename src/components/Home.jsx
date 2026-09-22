@@ -70,13 +70,31 @@ function Home({ onJoinRoom }) {
   return (
     <section className="home">
       <h1>Duality Dice</h1>
-      <p>Rolagem de Esperança e Medo do Daggerheart, em tempo real.</p>
+      <p className="home-tagline">
+        Rolagem de Esperança e Medo do Daggerheart, em tempo real.
+      </p>
+
+      <div className="rule-ember" aria-hidden="true">
+        <span />
+      </div>
 
       <div className="room-list">
         <h2>Salas disponíveis</h2>
-        {loading && <p>Carregando salas...</p>}
+
+        {loading && (
+          <ul aria-label="Carregando salas">
+            <li className="room-skeleton" />
+            <li className="room-skeleton" />
+          </ul>
+        )}
+
         {error && <p className="error">{error}</p>}
-        {!loading && !error && (
+
+        {!loading && !error && rooms.length === 0 && (
+          <p className="room-list-status">Nenhuma sala aberta ainda.</p>
+        )}
+
+        {!loading && !error && rooms.length > 0 && (
           <ul>
             {rooms.map((room) => (
               <li key={room.id} className="room-item">
@@ -91,7 +109,7 @@ function Home({ onJoinRoom }) {
       </div>
 
       <div className="home-actions">
-        <button type="button" disabled title="Em breve">
+        <button type="button" className="secundario" disabled title="Em breve">
           Criar sala
         </button>
       </div>

@@ -1,6 +1,7 @@
 import { DiceRoller } from '@gnuton/css-dice-roller'
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
 import CriticalEffect from './CriticalEffect'
+import Icon from './Icon'
 import { PlayerPips, SummaryRow } from './PlayerSheet'
 import { DICE_SYSTEM_D20 } from '../utils/diceSystem'
 import { DEFAULT_THEME } from '../utils/diceThemes'
@@ -445,7 +446,8 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
           title="Rolar"
           aria-label="Rolar"
         >
-          {rolling ? '...' : '🎲 Rolar'}
+          <Icon name="die" size={14} />
+          {rolling ? '...' : 'Rolar'}
         </button>
       )}
       {resultText && (

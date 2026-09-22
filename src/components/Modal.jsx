@@ -1,3 +1,5 @@
+import Icon from './Icon'
+
 // Shared modal chrome: backdrop + box + header (title, close button).
 // Used by every popup dialog so they share the same structure and styling.
 function Modal({ title, onClose, children }) {
@@ -6,8 +8,8 @@ function Modal({ title, onClose, children }) {
       <div className="modal-box" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>{title}</h2>
-          <button type="button" className="secundario" onClick={onClose} aria-label="Fechar">
-            ✕
+          <button type="button" className="secundario modal-close" onClick={onClose} aria-label="Fechar">
+            <Icon name="close" />
           </button>
         </div>
         {children}

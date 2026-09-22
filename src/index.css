@@ -3,23 +3,54 @@
      tema fixo (sem variante clara, é a proposta visual do site). */
   --text: #c9bb9c;
   --text-h: #f0d99a;
-  --text-muted: #8a7960;
+  --text-muted: #9a8768;
   --bg: #15100c;
   --bg-elev: #221a13;
   --stone: #2b2119;
+  --stone-deep: #1b1410;
   --border: #5a4530;
   --border-light: #7c6242;
   --code-bg: #221a13;
   --accent: #d9a745;
+  --accent-soft: #f2cd7d;
   --accent-bg: rgba(217, 167, 69, 0.12);
   --accent-border: rgba(217, 167, 69, 0.55);
   --primary: #b3432f;
   --primary-hover: #cd5236;
   --primary-active: #8a331f;
-  --danger: #c1543f;
+  --danger: #d4664f;
   --social-bg: rgba(43, 33, 25, 0.6);
+
+  /* Semânticos do jogo — Esperança é a brasa dourada, Medo é o sangue da
+     masmorra. Usados nos realces de resultado, histórico e trilhas. */
+  --hope: #e0b757;
+  --fear: #c8503a;
+
   --shadow: 4px 4px 0 rgba(0, 0, 0, 0.55);
   --shadow-sm: 2px 2px 0 rgba(0, 0, 0, 0.5);
+  --shadow-lift: 6px 6px 0 rgba(0, 0, 0, 0.6);
+  /* Luz de tocha: halo quente para o que está "aceso" na tela. */
+  --glow-ember: 0 0 18px rgba(217, 167, 69, 0.28);
+  --glow-ember-strong: 0 0 26px rgba(217, 167, 69, 0.45);
+
+  /* Escala de espaçamento de 4px — usada em vez de valores soltos. */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+
+  /* Camadas: um valor por papel, nada de z-index improvisado. */
+  --z-raised: 10;
+  --z-effect: 20;
+  --z-overlay: 50;
+
+  /* Ritmo de animação único pro site inteiro. */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.3, 1);
+  --dur-fast: 120ms;
+  --dur: 200ms;
 
   /* "Cantos de pixel": recorta os 4 cantos em degrau ao invés de
      arredondar — é o que dá a leitura de UI 8-bit pros cards/botões. */
@@ -61,6 +92,7 @@
 
 body {
   margin: 0;
+  min-height: 100svh;
   background:
     radial-gradient(ellipse 900px 500px at 50% -8%, rgba(193, 84, 47, 0.16), transparent 60%),
     radial-gradient(ellipse 700px 500px at 100% 110%, rgba(90, 69, 48, 0.16), transparent 60%),
@@ -68,7 +100,34 @@ body {
     var(--bg);
 }
 
+/* Tocha: um halo quente atrás do conteúdo que respira devagar, dando a
+   sensação de fogo fora de quadro. Fica atrás de tudo e não captura
+   clique. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 620px 420px at 50% 0%, rgba(217, 167, 69, 0.1), transparent 70%),
+    radial-gradient(ellipse 900px 600px at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
+  animation: torch-breathe 7s ease-in-out infinite;
+}
+
+@keyframes torch-breathe {
+  0%,
+  100% {
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 #root {
+  position: relative;
+  z-index: 1;
   width: 100%;
   max-width: 720px;
   margin: 0 auto;
@@ -77,6 +136,34 @@ body {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+}
+
+/* Paredes da masmorra: as bordas laterais da coluna de conteúdo, pra que o
+   espaço vazio em telas largas leia como "corredor" e não como vazio.
+   Some no mobile, onde não há espaço sobrando. */
+@media (min-width: 900px) {
+  #root::before,
+  #root::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      rgba(90, 69, 48, 0.45) 18%,
+      rgba(90, 69, 48, 0.45) 82%,
+      transparent
+    );
+  }
+  #root::before {
+    left: calc(50% - 400px);
+  }
+  #root::after {
+    right: calc(50% - 400px);
+  }
 }
 
 h1,
@@ -90,7 +177,7 @@ h1 {
   font-size: 34px;
   line-height: 1.5;
   letter-spacing: 1px;
-  margin: 32px 0;
+  margin: var(--sp-6) 0;
   text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.6);
   @media (max-width: 1024px) {
     font-size: 22px;
@@ -103,7 +190,7 @@ h2 {
   line-height: 118%;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  margin: 0 0 8px;
+  margin: 0 0 var(--sp-2);
   @media (max-width: 1024px) {
     font-size: 21px;
   }
@@ -125,4 +212,24 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
   border: 1px solid var(--border);
+}
+
+/* Foco visível em tudo que é operável — a UI é escura e o anel dourado é o
+   único sinal de teclado que sobrevive ao contraste. */
+:where(button, a, input, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Quem pediu menos movimento recebe a mesma UI sem as animações de
+   ambiente, giro de dado e efeitos de crítico. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

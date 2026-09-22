@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import Icon from './Icon'
 import { FullStatSheet } from './PlayerSheet'
 
 const INITIAL_POSITION = { x: 24, y: 96 }
@@ -30,8 +31,8 @@ function PartyStatusModal({ players, myPresenceKey, getStats, onClose }) {
     <div className="status-modal" style={{ left: position.x, top: position.y }}>
       <div className="status-modal-header" onPointerDown={startDrag}>
         <span>Status da mesa</span>
-        <button type="button" className="secundario" onClick={onClose} aria-label="Fechar">
-          ✕
+        <button type="button" className="secundario modal-close" onClick={onClose} aria-label="Fechar">
+          <Icon name="close" />
         </button>
       </div>
       <div className="status-modal-body">
