@@ -126,6 +126,11 @@ body::before {
 }
 
 #root {
+  /* Metade da largura do conteúdo — usada pelas "paredes" decorativas
+     abaixo pra saber onde desenhar a borda do corredor. Sala widescreen
+     (várias fichas lado a lado) pede mais espaço que as outras telas, daí
+     o :has() logo abaixo só reabre a largura ali. */
+  --content-half: 360px;
   position: relative;
   z-index: 1;
   width: 100%;
@@ -136,6 +141,13 @@ body::before {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+}
+
+/* Na sala, várias fichas de jogador em linha pedem mais largura que as
+   outras telas (capa, formulário de entrada) — só ali o corredor abre. */
+#root:has(> .room) {
+  max-width: 1040px;
+  --content-half: 520px;
 }
 
 /* Paredes da masmorra: as bordas laterais da coluna de conteúdo, pra que o
@@ -159,10 +171,10 @@ body::before {
     );
   }
   #root::before {
-    left: calc(50% - 400px);
+    left: calc(50% - var(--content-half) - 40px);
   }
   #root::after {
-    right: calc(50% - 400px);
+    right: calc(50% - var(--content-half) - 40px);
   }
 }
 

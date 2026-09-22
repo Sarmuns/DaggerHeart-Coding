@@ -449,10 +449,22 @@ input:focus-visible {
   border-color: var(--danger) !important;
 }
 
+/* A sala em si abre mais largura que as outras telas (pra caber várias
+   fichas lado a lado no .dice-table) — mas cabeçalho, histórico, pills e
+   botão de rolar continuam na largura de leitura original de 480px, cada
+   um recentralizado por conta própria (ver regras logo abaixo). */
 .room {
   width: 100%;
-  max-width: 480px;
+  max-width: 1040px;
   margin: 0 auto;
+}
+
+.room-header,
+.notice,
+.history {
+  max-width: 480px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* ---------- Cabeçalho da sala ----------
@@ -634,12 +646,18 @@ input:focus-visible {
   flex: 1;
 }
 
+/* Grid em vez de flex-wrap: com várias fichas a diferença de conteúdo
+   (DM só tem Medo, jogador tem PV/Evasão/Armadura + 3 trilhas) fazia cada
+   card ter uma altura bem diferente, e no flex isso lia como bagunça.
+   Grid estica todo mundo da mesma linha pra mesma altura por padrão
+   (align-items: stretch é o default do grid) — sem precisar calcular
+   nada manualmente. */
 .dice-table {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 16px;
-  justify-content: center;
   width: 100%;
+  justify-items: center;
 }
 
 .stats-grid {
@@ -1044,6 +1062,10 @@ input:focus-visible {
   display: flex;
   flex-direction: column;
   align-items: center;
+  /* O grid do .dice-table estica todo mundo da linha pra mesma altura
+     (default do grid); space-between espalha essa sobra entre as seções
+     do card em vez de deixar um vão morto só embaixo. */
+  justify-content: space-between;
   gap: var(--sp-2);
   min-width: 210px;
   border: 2px solid var(--border);

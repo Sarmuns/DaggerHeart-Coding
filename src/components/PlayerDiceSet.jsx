@@ -433,6 +433,14 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
           </div>
         )}
       </div>
+      {resultText && (
+        <p
+          className={`dice-set-result${isD20 ? ' dice-set-result--d20' : ''}`}
+          style={{ color: resultColor }}
+        >
+          {resultText}
+        </p>
+      )}
       {stats && (
         <PlayerPips name={name} stats={stats} editable={statsEditable} onSetField={onChangeStatField} />
       )}
@@ -479,14 +487,6 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
           <Icon name="die" size={14} />
           {rolling ? '...' : 'Rolar'}
         </button>
-      )}
-      {resultText && (
-        <p
-          className={`dice-set-result${isD20 ? ' dice-set-result--d20' : ''}`}
-          style={{ color: resultColor }}
-        >
-          {resultText}
-        </p>
       )}
     </div>
   )
