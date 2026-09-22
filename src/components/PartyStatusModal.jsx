@@ -43,7 +43,7 @@ function PartyStatusModal({ players, myPresenceKey, getStats, onClose }) {
               {p.name}
               {p.presenceKey === myPresenceKey && <span className="status-modal-player-you"> (você)</span>}
             </p>
-            <FullStatSheet name={p.name} stats={getStats(p)} editable={false} onChangeField={() => {}} compact />
+            <FullStatSheet name={p.name} stats={getStats(p)} />
           </div>
         ))}
       </div>

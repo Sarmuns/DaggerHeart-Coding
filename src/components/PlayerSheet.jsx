@@ -5,12 +5,11 @@ function toNumber(value) {
   return Number.isFinite(n) ? n : 0
 }
 
-// Read-only rendering of a stat, shared by StatField and StatTrackField —
-// used only by the party status panel (nobody edits anyone else's sheet
-// there). A little "stone chip" instead of a disabled input box: same
-// visual language as the PV/Evasão/Armadura badges on the dice card, just
-// generalized to any label/value pair.
-function StatReadout({ label, value }) {
+// Single stat, rendered as a little read-only "stone chip" — same visual
+// language as the PV/Evasão/Armadura badges on the dice card. Used only by
+// the party status panel: nobody edits anyone else's sheet there anymore,
+// real editing happens right on each player's own dice box.
+function StatField({ label, value }) {
   return (
     <div className="stat-readout">
       <span className="stat-readout-label">{label}</span>
@@ -19,49 +18,9 @@ function StatReadout({ label, value }) {
   )
 }
 
-// Single-value stat (e.g. Evasion, Damage Thresholds) — editable draft in
-// the stats modal, read-only chip in the party status panel.
-export function StatField({ label, value, editable, onChange }) {
-  if (!editable) return <StatReadout label={label} value={value} />
-
-  return (
-    <label className="stat stat--simple">
-      <span className="stat-label">{label}</span>
-      <input
-        type="number"
-        value={value}
-        onFocus={(e) => e.target.select()}
-        onChange={(e) => onChange(toNumber(e.target.value))}
-      />
-    </label>
-  )
-}
-
-// Track stat: current value / max — editable draft in the stats modal,
-// read-only chip in the party status panel.
-export function StatTrackField({ label, value, max, editable, onChangeValue, onChangeMax }) {
-  if (!editable) return <StatReadout label={label} value={`${value}/${max}`} />
-
-  return (
-    <div className="stat stat--track">
-      <span className="stat-label">{label}</span>
-      <div className="stat-track-values">
-        <input
-          type="number"
-          value={value}
-          onFocus={(e) => e.target.select()}
-          onChange={(e) => onChangeValue(toNumber(e.target.value))}
-        />
-        <span className="stat-track-separator">/</span>
-        <input
-          type="number"
-          value={max}
-          onFocus={(e) => e.target.select()}
-          onChange={(e) => onChangeMax(toNumber(e.target.value))}
-        />
-      </div>
-    </div>
-  )
+// Track stat (current/max) — same chip, just formats the value as a pair.
+function StatTrackField({ label, value, max }) {
+  return <StatField label={label} value={`${value}/${max}`} />
 }
 
 // Small number field with up/down arrows, used for the single-click-away
@@ -238,76 +197,29 @@ export function PlayerPips({ name, stats, editable, onSetField }) {
   )
 }
 
-// Full editable sheet, only inside the status/stats modal — brings together
-// everything that isn't in the summary row or the quick pips. This is where
-// values are actually edited (with an explicit Save button outside, in the
-// modal), instead of writing on every keystroke.
-export function FullStatSheet({ name, stats, editable, onChangeField, compact = false }) {
-  function change(field) {
-    return (value) => onChangeField(field, value)
-  }
-  const wrapperClass = compact ? 'player-sheet' : 'stats-grid'
-
+// Full read-only sheet, only inside the party status panel — brings
+// together everything that isn't in the summary row or the quick pips.
+// Editing lives entirely on each player's own dice box now (see
+// PlayerDiceSet/SummaryRow/PlayerPips) — this is purely a snapshot.
+export function FullStatSheet({ name, stats }) {
   if (isDM(name)) {
     return (
-      <div className={wrapperClass}>
-        <StatTrackField
-          label="Medo"
-          value={stats.fear}
-          max={stats.fearMax}
-          editable={editable}
-          onChangeValue={change('fear')}
-          onChangeMax={change('fearMax')}
-        />
+      <div className="player-sheet">
+        <StatTrackField label="Medo" value={stats.fear} max={stats.fearMax} />
       </div>
     )
   }
 
   return (
-    <div className={wrapperClass}>
-      <StatTrackField
-        label="PV"
-        value={stats.hp}
-        max={stats.hpMax}
-        editable={editable}
-        onChangeValue={change('hp')}
-        onChangeMax={change('hpMax')}
-      />
-      <StatField label="Evasão" value={stats.evasion} editable={editable} onChange={change('evasion')} />
-      <StatTrackField
-        label="Armadura"
-        value={stats.armor}
-        max={stats.armorMax}
-        editable={editable}
-        onChangeValue={change('armor')}
-        onChangeMax={change('armorMax')}
-      />
-      <StatTrackField
-        label="Esperança"
-        value={stats.hopeTokens}
-        max={stats.hopeTokensMax}
-        editable={editable}
-        onChangeValue={change('hopeTokens')}
-        onChangeMax={change('hopeTokensMax')}
-      />
-      <StatTrackField
-        label="Estresse"
-        value={stats.stress}
-        max={stats.stressMax}
-        editable={editable}
-        onChangeValue={change('stress')}
-        onChangeMax={change('stressMax')}
-      />
-      <StatTrackField
-        label="Fadiga"
-        value={stats.fatigue}
-        max={stats.fatigueMax}
-        editable={editable}
-        onChangeValue={change('fatigue')}
-        onChangeMax={change('fatigueMax')}
-      />
-      <StatField label="Limiar Maior" value={stats.majorThreshold} editable={editable} onChange={change('majorThreshold')} />
-      <StatField label="Limiar Grave" value={stats.severeThreshold} editable={editable} onChange={change('severeThreshold')} />
+    <div className="player-sheet">
+      <StatTrackField label="PV" value={stats.hp} max={stats.hpMax} />
+      <StatField label="Evasão" value={stats.evasion} />
+      <StatTrackField label="Armadura" value={stats.armor} max={stats.armorMax} />
+      <StatTrackField label="Esperança" value={stats.hopeTokens} max={stats.hopeTokensMax} />
+      <StatTrackField label="Estresse" value={stats.stress} max={stats.stressMax} />
+      <StatTrackField label="Fadiga" value={stats.fatigue} max={stats.fatigueMax} />
+      <StatField label="Limiar Maior" value={stats.majorThreshold} />
+      <StatField label="Limiar Grave" value={stats.severeThreshold} />
     </div>
   )
 }

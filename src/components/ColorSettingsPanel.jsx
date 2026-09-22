@@ -9,10 +9,9 @@ import { DICE_SYSTEM_D20, defaultDiceSystemFor } from '../utils/diceSystem'
 import { DEFAULT_THEME } from '../utils/diceThemes'
 import DiceColorModal from './DiceColorModal'
 import Modal from './Modal'
-import StatsModal from './StatsModal'
 
-function ColorSettingsPanel({ player, diceSystem, stats, onUpdatePlayer, onSaveStats, onClose }) {
-  const [openModal, setOpenModal] = useState(null) // 'hope' | 'fear' | 'stats' | null
+function ColorSettingsPanel({ player, diceSystem, onUpdatePlayer, onClose }) {
+  const [openModal, setOpenModal] = useState(null) // 'hope' | 'fear' | null
   const isD20 = (diceSystem ?? defaultDiceSystemFor(player.name)) === DICE_SYSTEM_D20
 
   return (
@@ -30,10 +29,6 @@ function ColorSettingsPanel({ player, diceSystem, stats, onUpdatePlayer, onSaveS
             {isD20 ? 'Dado d20 extra' : 'Dado de Medo'}
           </button>
         </div>
-
-        <button type="button" onClick={() => setOpenModal('stats')}>
-          Marcadores do Personagem
-        </button>
       </Modal>
 
       {openModal === 'hope' &&
@@ -113,10 +108,6 @@ function ColorSettingsPanel({ player, diceSystem, stats, onUpdatePlayer, onSaveS
             onClose={() => setOpenModal(null)}
           />
         ))}
-
-      {openModal === 'stats' && (
-        <StatsModal name={player.name} stats={stats} onApply={onSaveStats} onClose={() => setOpenModal(null)} />
-      )}
     </>
   )
 }

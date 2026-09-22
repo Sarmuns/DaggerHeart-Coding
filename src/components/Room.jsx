@@ -527,9 +527,7 @@ function Room({ room, player, onUpdatePlayer }) {
         <ColorSettingsPanel
           player={player}
           diceSystem={myDiceSystem}
-          stats={stats}
           onUpdatePlayer={onUpdatePlayer}
-          onSaveStats={saveFullStats}
           onClose={() => setPanelOpen(false)}
         />
       )}

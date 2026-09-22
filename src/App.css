@@ -672,79 +672,6 @@ input:focus-visible {
   }
 }
 
-.stats-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px 10px;
-}
-
-.stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-}
-
-.stat-label {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-muted, #8a8a8a);
-}
-
-.stat .stat-track-values,
-.stat input[type='number'] {
-  padding: 8px 10px;
-}
-
-.stat-track-values {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 100%;
-  padding: 8px 10px;
-  border: 1px solid var(--border);
-  background: var(--stone);
-  --notch: 4px;
-  clip-path: var(--clip-pixel);
-}
-
-.stat-track-values input {
-  width: 100%;
-  min-width: 0;
-  padding: 0;
-  border: none;
-  background: transparent;
-  color: var(--text);
-  font: inherit;
-  font-size: 15px;
-  font-weight: 600;
-  text-align: center;
-  -moz-appearance: textfield;
-}
-
-.stat-track-values input::-webkit-outer-spin-button,
-.stat-track-values input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-/* Campo de valor único (Evasão, Limiares): sem isto o <input type=number>
-   assume a largura intrínseca do navegador (~190px) em vez da célula do
-   grid, e vaza por cima da célula vizinha — era a causa do overlap. */
-.stat--simple input[type='number'] {
-  width: 100%;
-  box-sizing: border-box;
-  text-align: center;
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text);
-  --notch: 4px;
-  clip-path: var(--clip-pixel);
-}
-
 /* Painel de status da mesa: grid compacto de "fichas de pedra"
    read-only, uma por estatística — troca a antiga pilha de caixas de
    input desabilitadas (uma por linha, enorme) por chips pequenos lado a
@@ -785,11 +712,6 @@ input:focus-visible {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--text-h);
-}
-
-.stat-track-separator {
-  font-size: 12px;
-  color: var(--text-muted, #8a8a8a);
 }
 
 /* "HP / Evasion / Armor" blocks above the dice — read-only, label on top
