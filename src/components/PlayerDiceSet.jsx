@@ -42,6 +42,7 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
     statsEditable,
     onChangeStatField,
     onCommitStats,
+    onDiscardStats,
     canCommitStats,
     hasPendingStatChanges,
     criticalEffect,
@@ -436,22 +437,35 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
         <PlayerPips name={name} stats={stats} editable={statsEditable} onSetField={onChangeStatField} />
       )}
       {onCommitStats && (
-        <button
-          type="button"
-          className="commit-button"
-          onClick={onCommitStats}
-          disabled={!hasPendingStatChanges || !canCommitStats}
-          title={
-            !hasPendingStatChanges
-              ? 'Nada pra anotar ainda'
-              : canCommitStats
-                ? 'Anotar na ficha'
-                : 'Aguarde alguns segundos pra anotar de novo'
-          }
-        >
-          <Icon name="check" size={14} />
-          {hasPendingStatChanges && !canCommitStats ? 'Aguarde...' : 'Anotar na Ficha'}
-        </button>
+        <div className="stat-actions">
+          <button
+            type="button"
+            className="commit-button"
+            onClick={onCommitStats}
+            disabled={!hasPendingStatChanges || !canCommitStats}
+            title={
+              !hasPendingStatChanges
+                ? 'Nada pra anotar ainda'
+                : canCommitStats
+                  ? 'Anotar na ficha'
+                  : 'Aguarde alguns segundos pra anotar de novo'
+            }
+          >
+            <Icon name="check" size={14} />
+            {hasPendingStatChanges && !canCommitStats ? 'Aguarde...' : 'Anotar na Ficha'}
+          </button>
+          {hasPendingStatChanges && (
+            <button
+              type="button"
+              className="discard-button"
+              onClick={onDiscardStats}
+              title="Descartar alterações"
+              aria-label="Descartar alterações"
+            >
+              <Icon name="close" size={14} />
+            </button>
+          )}
+        </div>
       )}
       {onRoll && (
         <button

@@ -866,10 +866,15 @@ input:focus-visible {
 .stat-stepper-arrows {
   display: flex;
   flex-direction: column;
-  width: 16px;
+  width: 18px;
   flex-shrink: 0;
 }
 
+/* Reseta o que vem do <button> global: o clip-path de cantos em degrau
+   assume um botão bem maior — aplicado aqui ele mordia quase um terço
+   desse botãozinho de 18x13px, deformando o triângulo num borrão que lia
+   como "+". overflow:visible garante que o triângulo (que estoura um
+   pouco a caixa por causa do border-trick) nunca seja cortado. */
 .stat-stepper-btn {
   flex: 1;
   min-width: 0;
@@ -880,6 +885,8 @@ input:focus-visible {
   background: var(--stone);
   cursor: pointer;
   box-shadow: none;
+  clip-path: none;
+  overflow: visible;
   touch-action: manipulation;
   transition: background-color var(--dur-fast) var(--ease-out);
 }
@@ -922,7 +929,7 @@ input:focus-visible {
     height: 34px;
   }
   .stat-stepper-arrows {
-    width: 22px;
+    width: 24px;
   }
 }
 
@@ -1370,6 +1377,16 @@ input:focus-visible {
   box-shadow: var(--shadow-sm), var(--glow-ember);
 }
 
+/* Linha "Anotar na Ficha" + descartar — o botão de descartar só aparece
+   junto quando há algo pra descartar, do lado do que confirma, no mesmo
+   gesto de "revisar antes de sair da tela". */
+.stat-actions {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+  margin-top: 2px;
+}
+
 /* "Anotar na Ficha" — grava o rascunho de PV/Evasão/Armadura/trilhas que
    só existia local no seu card. Dourado (não vermelho, pra não competir
    com o Rolar), cinza e sem brilho enquanto não há nada pra anotar —
@@ -1379,11 +1396,13 @@ input:focus-visible {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   min-height: 36px;
   font-size: 15px;
   letter-spacing: 0.05em;
   padding: 5px 14px;
+  margin-top: 0;
   border-color: var(--accent-border);
   background: linear-gradient(to bottom, var(--accent-soft), var(--accent) 60%);
   color: #2b1c08;
@@ -1405,6 +1424,28 @@ input:focus-visible {
   50% {
     box-shadow: var(--shadow-sm), var(--glow-ember);
   }
+}
+
+/* Descartar: um X discreto ao lado do "Anotar" — neutro em repouso,
+   esquenta pro vermelho de perigo só no hover (é destrutivo pro seu
+   rascunho, mesmo não tocando o servidor). */
+.discard-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  min-height: 36px;
+  padding: 0;
+  border-color: var(--border);
+  background: var(--stone);
+  color: var(--text-muted);
+}
+
+.discard-button:hover:not(:disabled) {
+  border-color: var(--danger);
+  background: rgba(193, 84, 63, 0.15);
+  color: var(--danger);
 }
 
 /* Anúncio da rolagem: o texto entra "batendo" (escala + brilho) porque é

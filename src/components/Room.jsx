@@ -211,6 +211,13 @@ function Room({ room, player, onUpdatePlayer }) {
     setTimeout(() => setCommitCooldownUntil(0), COMMIT_COOLDOWN_MS)
   }
 
+  // Throws the draft away and goes back to whatever's actually saved — no
+  // cooldown, it's purely local and there's nothing to protect the server
+  // from.
+  function discardDraftStats() {
+    setDraftStats(stats)
+  }
+
   useEffect(() => {
     let active = true
 
@@ -560,6 +567,7 @@ function Room({ room, player, onUpdatePlayer }) {
               statsEditable={isMe}
               onChangeStatField={isMe ? updateDraftStatField : undefined}
               onCommitStats={isMe ? commitDraftStats : undefined}
+              onDiscardStats={isMe ? discardDraftStats : undefined}
               canCommitStats={canCommitStats}
               hasPendingStatChanges={hasPendingStatChanges}
               criticalEffect={criticalEffect?.presenceKey === p.presenceKey ? criticalEffect : null}
