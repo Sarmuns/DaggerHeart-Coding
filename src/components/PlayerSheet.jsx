@@ -166,10 +166,10 @@ export function SummaryRow({ name, stats, editable, onChangeField }) {
 // Read-only elsewhere; in your own box each pip is clickable — click the
 // Nth pip to fill up to it, click the last filled one again to peel it
 // back. Same "nothing syncs until Anotar na Ficha" rule as the summary row.
-function TrackPips({ label, value, max, editable, onSetValue }) {
+function TrackPips({ label, value, max, editable, onSetValue, stacked }) {
   const total = Math.max(max, 0)
   return (
-    <div className="track-pips">
+    <div className={`track-pips${stacked ? ' track-pips--stacked' : ''}`}>
       <span className="track-pips-label">{label}</span>
       <div className="track-pips-dots">
         {Array.from({ length: total }, (_, i) => i + 1).map((n) => {
@@ -205,6 +205,7 @@ export function PlayerPips({ name, stats, editable, onSetField }) {
           max={stats.fearMax}
           editable={editable}
           onSetValue={(v) => onSetField('fear', v)}
+          stacked
         />
       </div>
     )

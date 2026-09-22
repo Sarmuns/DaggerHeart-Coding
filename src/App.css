@@ -651,13 +651,25 @@ input:focus-visible {
    card ter uma altura bem diferente, e no flex isso lia como bagunça.
    Grid estica todo mundo da mesma linha pra mesma altura por padrão
    (align-items: stretch é o default do grid) — sem precisar calcular
-   nada manualmente. */
+   nada manualmente.
+
+   O número de colunas (--dice-cols) vem do Room via style inline: sempre
+   o quadrado mais próximo da quantidade de jogadores (4 → 2x2, 5~6 → 3x2,
+   7~9 → 3x3, ...) em vez de "quantas couberem" — fica sempre arrumadinho
+   em vez de uma fileira enorme de 6 cards. No mobile isso não cabe, então
+   fica em coluna única até a tela abrir espaço de verdade. */
 .dice-table {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: 1fr;
   gap: 16px;
   width: 100%;
   justify-items: center;
+}
+
+@media (min-width: 640px) {
+  .dice-table {
+    grid-template-columns: repeat(var(--dice-cols, 1), minmax(0, 1fr));
+  }
 }
 
 .stats-grid {
@@ -998,6 +1010,34 @@ input:focus-visible {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
+}
+
+/* Trilha "solo" (só o Medo do DM, sem outras trilhas dividindo a linha):
+   label em cima, centralizado, e os pips ganham a largura toda do card
+   pra caber os 12 numa linha só — o layout label-à-esquerda das outras
+   trilhas sobrava pouco espaço pros pips e quebrava torto. */
+.track-pips--stacked {
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.track-pips--stacked .track-pips-label {
+  min-width: 0;
+  text-align: center;
+}
+.track-pips--stacked .track-pips-dots {
+  justify-content: center;
+}
+
+/* Se mesmo assim não couber (tela bem estreita), força quebra em duas
+   fileiras de 6 em vez de deixar o flex-wrap decidir um corte torto tipo
+   "8 + 1". */
+@media (max-width: 420px) {
+  .track-pips--stacked .track-pips-dots {
+    display: grid;
+    grid-template-columns: repeat(6, auto);
+    justify-content: center;
+  }
 }
 
 /* .pip é um <span> nas caixas dos outros jogadores, mas um <button> na

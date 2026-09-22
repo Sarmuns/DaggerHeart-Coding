@@ -534,7 +534,10 @@ function Room({ room, player, onUpdatePlayer }) {
         />
       )}
 
-      <div className="dice-table">
+      <div
+        className="dice-table"
+        style={{ '--dice-cols': Math.max(1, Math.ceil(Math.sqrt(onlinePlayers.length))) }}
+      >
         {onlinePlayers.map((p) => {
           const playerDiceSystem = p.diceSystem ?? defaultDiceSystemFor(p.name)
           const primary = primaryStyle(p, playerDiceSystem)
