@@ -39,10 +39,10 @@ function PartyStatusModal({ players, myPresenceKey, getStats, onClose }) {
         {players.length === 0 && <p className="status-modal-empty">Ninguém pra mostrar ainda.</p>}
         {players.map((p) => (
           <div key={p.presenceKey} className="status-modal-player">
-            <strong style={{ color: p.color }}>
+            <p className="status-modal-player-name" style={{ color: p.color, borderColor: p.color }}>
               {p.name}
-              {p.presenceKey === myPresenceKey ? ' (você)' : ''}
-            </strong>
+              {p.presenceKey === myPresenceKey && <span className="status-modal-player-you"> (você)</span>}
+            </p>
             <FullStatSheet name={p.name} stats={getStats(p)} editable={false} onChangeField={() => {}} compact />
           </div>
         ))}

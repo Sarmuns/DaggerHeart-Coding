@@ -5,16 +5,31 @@ function toNumber(value) {
   return Number.isFinite(n) ? n : 0
 }
 
-// Single-value stat (e.g. Evasion, Damage Thresholds) — used both in the
-// status modal (compact) and the stats modal (larger editable draft).
-export function StatField({ label, value, editable, onChange, compact }) {
+// Read-only rendering of a stat, shared by StatField and StatTrackField —
+// used only by the party status panel (nobody edits anyone else's sheet
+// there). A little "stone chip" instead of a disabled input box: same
+// visual language as the PV/Evasão/Armadura badges on the dice card, just
+// generalized to any label/value pair.
+function StatReadout({ label, value }) {
   return (
-    <label className={`stat stat--simple${compact ? ' stat--compact' : ''}`}>
+    <div className="stat-readout">
+      <span className="stat-readout-label">{label}</span>
+      <span className="stat-readout-value">{value}</span>
+    </div>
+  )
+}
+
+// Single-value stat (e.g. Evasion, Damage Thresholds) — editable draft in
+// the stats modal, read-only chip in the party status panel.
+export function StatField({ label, value, editable, onChange }) {
+  if (!editable) return <StatReadout label={label} value={value} />
+
+  return (
+    <label className="stat stat--simple">
       <span className="stat-label">{label}</span>
       <input
         type="number"
         value={value}
-        disabled={!editable}
         onFocus={(e) => e.target.select()}
         onChange={(e) => onChange(toNumber(e.target.value))}
       />
@@ -22,17 +37,18 @@ export function StatField({ label, value, editable, onChange, compact }) {
   )
 }
 
-// Track stat: current value / max — used both in the status modal
-// (compact) and the stats modal (larger editable draft).
-export function StatTrackField({ label, value, max, editable, onChangeValue, onChangeMax, compact }) {
+// Track stat: current value / max — editable draft in the stats modal,
+// read-only chip in the party status panel.
+export function StatTrackField({ label, value, max, editable, onChangeValue, onChangeMax }) {
+  if (!editable) return <StatReadout label={label} value={`${value}/${max}`} />
+
   return (
-    <div className={`stat stat--track${compact ? ' stat--compact' : ''}`}>
+    <div className="stat stat--track">
       <span className="stat-label">{label}</span>
       <div className="stat-track-values">
         <input
           type="number"
           value={value}
-          disabled={!editable}
           onFocus={(e) => e.target.select()}
           onChange={(e) => onChangeValue(toNumber(e.target.value))}
         />
@@ -40,7 +56,6 @@ export function StatTrackField({ label, value, max, editable, onChangeValue, onC
         <input
           type="number"
           value={max}
-          disabled={!editable}
           onFocus={(e) => e.target.select()}
           onChange={(e) => onChangeMax(toNumber(e.target.value))}
         />
@@ -242,7 +257,6 @@ export function FullStatSheet({ name, stats, editable, onChangeField, compact = 
           editable={editable}
           onChangeValue={change('fear')}
           onChangeMax={change('fearMax')}
-          compact={compact}
         />
       </div>
     )
@@ -257,9 +271,8 @@ export function FullStatSheet({ name, stats, editable, onChangeField, compact = 
         editable={editable}
         onChangeValue={change('hp')}
         onChangeMax={change('hpMax')}
-        compact={compact}
       />
-      <StatField label="Evasão" value={stats.evasion} editable={editable} onChange={change('evasion')} compact={compact} />
+      <StatField label="Evasão" value={stats.evasion} editable={editable} onChange={change('evasion')} />
       <StatTrackField
         label="Armadura"
         value={stats.armor}
@@ -267,7 +280,6 @@ export function FullStatSheet({ name, stats, editable, onChangeField, compact = 
         editable={editable}
         onChangeValue={change('armor')}
         onChangeMax={change('armorMax')}
-        compact={compact}
       />
       <StatTrackField
         label="Esperança"
@@ -276,7 +288,6 @@ export function FullStatSheet({ name, stats, editable, onChangeField, compact = 
         editable={editable}
         onChangeValue={change('hopeTokens')}
         onChangeMax={change('hopeTokensMax')}
-        compact={compact}
       />
       <StatTrackField
         label="Estresse"
@@ -285,7 +296,6 @@ export function FullStatSheet({ name, stats, editable, onChangeField, compact = 
         editable={editable}
         onChangeValue={change('stress')}
         onChangeMax={change('stressMax')}
-        compact={compact}
       />
       <StatTrackField
         label="Fadiga"
@@ -294,22 +304,9 @@ export function FullStatSheet({ name, stats, editable, onChangeField, compact = 
         editable={editable}
         onChangeValue={change('fatigue')}
         onChangeMax={change('fatigueMax')}
-        compact={compact}
       />
-      <StatField
-        label="Limiar Maior"
-        value={stats.majorThreshold}
-        editable={editable}
-        onChange={change('majorThreshold')}
-        compact={compact}
-      />
-      <StatField
-        label="Limiar Grave"
-        value={stats.severeThreshold}
-        editable={editable}
-        onChange={change('severeThreshold')}
-        compact={compact}
-      />
+      <StatField label="Limiar Maior" value={stats.majorThreshold} editable={editable} onChange={change('majorThreshold')} />
+      <StatField label="Limiar Grave" value={stats.severeThreshold} editable={editable} onChange={change('severeThreshold')} />
     </div>
   )
 }

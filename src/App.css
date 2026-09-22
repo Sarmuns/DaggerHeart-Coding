@@ -648,14 +648,7 @@ input:focus-visible {
   gap: 12px 10px;
 }
 
-.stat--compact {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-
-.stat:not(.stat--compact) {
+.stat {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -670,12 +663,8 @@ input:focus-visible {
   color: var(--text-muted, #8a8a8a);
 }
 
-.stat--compact .stat-label {
-  font-size: 10px;
-}
-
-.stat:not(.stat--compact) .stat-track-values,
-.stat:not(.stat--compact) input[type='number'] {
+.stat .stat-track-values,
+.stat input[type='number'] {
   padding: 8px 10px;
 }
 
@@ -690,13 +679,6 @@ input:focus-visible {
   background: var(--stone);
   --notch: 4px;
   clip-path: var(--clip-pixel);
-}
-
-.stat--compact .stat-track-values {
-  padding: 0;
-  border: none;
-  background: transparent;
-  clip-path: none;
 }
 
 .stat-track-values input {
@@ -733,18 +715,46 @@ input:focus-visible {
   clip-path: var(--clip-pixel);
 }
 
-.stat--compact input[type='number'] {
-  width: 36px;
-  padding: 2px 4px;
-  font-size: 13px;
-  text-align: center;
-  border: 1px solid var(--border);
-  background: var(--stone);
-  color: var(--text);
+/* Painel de status da mesa: grid compacto de "fichas de pedra"
+   read-only, uma por estatística — troca a antiga pilha de caixas de
+   input desabilitadas (uma por linha, enorme) por chips pequenos lado a
+   lado, mesma linguagem visual do PV/Evasão/Armadura no card de dados. */
+.player-sheet {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(74px, 1fr));
+  gap: 6px;
 }
 
-.stat--compact input[type='number']:disabled {
-  opacity: 0.75;
+.stat-readout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 40px;
+  box-sizing: border-box;
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  background: var(--stone-deep);
+  --notch: 3px;
+  clip-path: var(--clip-pixel);
+}
+
+.stat-readout-label {
+  font-family: var(--pixel);
+  font-size: 11px;
+  line-height: 1.15;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted, #8a8a8a);
+}
+
+.stat-readout-value {
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-h);
 }
 
 .stat-track-separator {
@@ -1727,14 +1737,10 @@ input:focus-visible {
   touch-action: none;
 }
 
-.status-modal-header button {
-  padding: 2px 8px;
-}
-
 .status-modal-body {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
   padding: 10px;
   overflow-y: auto;
 }
@@ -1742,14 +1748,37 @@ input:focus-visible {
 .status-modal-player {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding-bottom: 8px;
+  gap: 8px;
+  padding-bottom: 12px;
   border-bottom: 1px solid var(--border);
 }
 
 .status-modal-player:last-child {
   border-bottom: none;
   padding-bottom: 0;
+}
+
+/* Nome do jogador como uma pequena placa, com um filete embaixo na cor
+   dele mesmo (currentColor) — o mesmo gesto do nome no card de dados,
+   só que sem a faixa de pedra inteira (aqui o espaço é curto). */
+.status-modal-player-name {
+  margin: 0;
+  font-family: var(--pixel);
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding-bottom: 4px;
+  border-bottom: 1.5px solid currentColor;
+  opacity: 0.95;
+}
+
+.status-modal-player-you {
+  font-family: var(--sans);
+  font-size: 11px;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--text-muted);
 }
 
 .status-modal-empty {
