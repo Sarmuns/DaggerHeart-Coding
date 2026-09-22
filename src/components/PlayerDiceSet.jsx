@@ -40,8 +40,10 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
     resultColor,
     stats,
     statsEditable,
-    canAdjustStat,
-    onAdjustStat,
+    onChangeStatField,
+    onCommitStats,
+    canCommitStats,
+    hasPendingStatChanges,
     criticalEffect,
     onCriticalEffectEnd,
     onRoll,
@@ -382,7 +384,9 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
       <span className="dice-set-name" style={{ color }}>
         {name}
       </span>
-      {stats && <SummaryRow name={name} stats={stats} />}
+      {stats && (
+        <SummaryRow name={name} stats={stats} editable={statsEditable} onChangeField={onChangeStatField} />
+      )}
       <div className="dice-row">
         <div className="die-stage">
           <span className="die-label" style={{ color: primaryColor }}>
@@ -429,13 +433,25 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
         )}
       </div>
       {stats && (
-        <PlayerPips
-          name={name}
-          stats={stats}
-          editable={statsEditable}
-          canAdjust={canAdjustStat}
-          onAdjust={onAdjustStat}
-        />
+        <PlayerPips name={name} stats={stats} editable={statsEditable} onSetField={onChangeStatField} />
+      )}
+      {onCommitStats && (
+        <button
+          type="button"
+          className="commit-button"
+          onClick={onCommitStats}
+          disabled={!hasPendingStatChanges || !canCommitStats}
+          title={
+            !hasPendingStatChanges
+              ? 'Nada pra anotar ainda'
+              : canCommitStats
+                ? 'Anotar na ficha'
+                : 'Aguarde alguns segundos pra anotar de novo'
+          }
+        >
+          <Icon name="check" size={14} />
+          {hasPendingStatChanges && !canCommitStats ? 'Aguarde...' : 'Anotar na Ficha'}
+        </button>
       )}
       {onRoll && (
         <button

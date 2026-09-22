@@ -33,6 +33,12 @@ const PATHS = {
       <line x1="19" y1="5" x2="5" y2="19" />
     </>
   ),
+  // Check (usado no botão de "Anotar na Ficha")
+  check: (
+    <>
+      <polyline points="4 13 9.5 18.5 20 6" />
+    </>
+  ),
   // Dado: quadrado com pips nos cantos e no centro
   die: (
     <>

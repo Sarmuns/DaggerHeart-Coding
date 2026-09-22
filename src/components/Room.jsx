@@ -181,23 +181,34 @@ function Room({ room, player, onUpdatePlayer }) {
     setStats(newValues)
   }
 
-  // +/- buttons (Hope/Stress/Fatigue) on the dice box — quick, direct
-  // action, but with a 5s cooldown per stat (shared between add and
-  // subtract) to avoid flooding the server if several people click at once.
-  const ADJUST_COOLDOWN_MS = 5000
-  const [adjustCooldowns, setAdjustCooldowns] = useState({})
+  // Draft copy of the stats, edited freely inside the player's own dice box
+  // (summary row arrows/typing, pip clicks) without touching `stats` — and
+  // so without saving to the database or broadcasting to the table — until
+  // "Anotar na Ficha" is pressed. Resyncs whenever `stats` itself changes
+  // (initial load from the database, or right after a commit).
+  const [draftStats, setDraftStats] = useState(DEFAULT_STATS)
 
-  function canAdjustStat(field) {
-    return (adjustCooldowns[field] ?? 0) <= Date.now()
+  useEffect(() => {
+    setDraftStats(stats)
+  }, [stats])
+
+  function updateDraftStatField(field, value) {
+    setDraftStats((current) => ({ ...current, [field]: value }))
   }
 
-  function adjustStat(field, delta) {
-    if (!canAdjustStat(field)) return
-    setStats((current) => ({ ...current, [field]: Math.max(0, current[field] + delta) }))
-    setAdjustCooldowns((current) => ({ ...current, [field]: Date.now() + ADJUST_COOLDOWN_MS }))
-    setTimeout(() => {
-      setAdjustCooldowns((current) => ({ ...current, [field]: 0 }))
-    }, ADJUST_COOLDOWN_MS)
+  const hasPendingStatChanges = JSON.stringify(draftStats) !== JSON.stringify(stats)
+
+  // "Anotar na Ficha" — commits the draft, with its own 5s cooldown (per
+  // player) so a happy-clicker doesn't flood the database/table broadcast.
+  const COMMIT_COOLDOWN_MS = 5000
+  const [commitCooldownUntil, setCommitCooldownUntil] = useState(0)
+  const canCommitStats = Date.now() >= commitCooldownUntil
+
+  function commitDraftStats() {
+    if (!hasPendingStatChanges || !canCommitStats) return
+    saveFullStats(draftStats)
+    setCommitCooldownUntil(Date.now() + COMMIT_COOLDOWN_MS)
+    setTimeout(() => setCommitCooldownUntil(0), COMMIT_COOLDOWN_MS)
   }
 
   useEffect(() => {
@@ -545,10 +556,12 @@ function Room({ room, player, onUpdatePlayer }) {
                   ? resultColor(playerResult.winner, { hopeColor: primary.color, fearColor: secondary.color })
                   : null
               }
-              stats={isMe ? stats : statsFromPresence(p)}
+              stats={isMe ? draftStats : statsFromPresence(p)}
               statsEditable={isMe}
-              canAdjustStat={canAdjustStat}
-              onAdjustStat={adjustStat}
+              onChangeStatField={isMe ? updateDraftStatField : undefined}
+              onCommitStats={isMe ? commitDraftStats : undefined}
+              canCommitStats={canCommitStats}
+              hasPendingStatChanges={hasPendingStatChanges}
               criticalEffect={criticalEffect?.presenceKey === p.presenceKey ? criticalEffect : null}
               onCriticalEffectEnd={() => setCriticalEffect(null)}
               onRoll={isMe ? () => roll() : null}

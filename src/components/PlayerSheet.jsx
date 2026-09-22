@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { isDM } from '../utils/diceSystem'
 
 function toNumber(value) {
@@ -50,96 +49,130 @@ export function StatTrackField({ label, value, max, editable, onChangeValue, onC
   )
 }
 
-// "HP / Evasion / Armor" row above the dice — read-only (real editing
-// happens in the stats modal). Label on top, value below, each in its own
-// block so it doesn't turn into a wall of text.
-export function SummaryRow({ name, stats }) {
+// Small number field with up/down arrows, used for the single-click-away
+// stats (PV, Evasão, Armadura) in the dice box. Typing still works too —
+// the arrows are just a shortcut for the common "nudge by one" case.
+function Stepper({ value, onChange, min = 0 }) {
+  return (
+    <span className="stat-stepper">
+      <input
+        type="number"
+        className="stat-stepper-input"
+        value={value}
+        onFocus={(e) => e.target.select()}
+        onChange={(e) => onChange(toNumber(e.target.value))}
+      />
+      <span className="stat-stepper-arrows">
+        <button
+          type="button"
+          className="stat-stepper-btn stat-stepper-btn--up"
+          aria-label="Aumentar"
+          onClick={() => onChange(value + 1)}
+        />
+        <button
+          type="button"
+          className="stat-stepper-btn stat-stepper-btn--down"
+          aria-label="Diminuir"
+          onClick={() => onChange(Math.max(min, value - 1))}
+        />
+      </span>
+    </span>
+  )
+}
+
+// "HP / Evasion / Armor" row above the dice. Read-only for everyone else's
+// box; in your own box it's live-editable (arrows + typing) — but nothing
+// is sent anywhere until "Anotar na Ficha" is pressed (see PlayerDiceSet).
+export function SummaryRow({ name, stats, editable, onChangeField }) {
   if (isDM(name)) return null
+
+  if (!editable) {
+    return (
+      <div className="summary-row">
+        <div className="summary-block">
+          <span className="summary-block-label">PV</span>
+          <span className="summary-block-value">
+            {stats.hp}/{stats.hpMax}
+          </span>
+        </div>
+        <div className="summary-block">
+          <span className="summary-block-label">Evasão</span>
+          <span className="summary-block-value">{stats.evasion}</span>
+        </div>
+        <div className="summary-block">
+          <span className="summary-block-label">Armadura</span>
+          <span className="summary-block-value">
+            {stats.armor}/{stats.armorMax}
+          </span>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="summary-row">
-      <div className="summary-block">
+      <div className="summary-block summary-block--editable">
         <span className="summary-block-label">PV</span>
-        <span className="summary-block-value">
-          {stats.hp}/{stats.hpMax}
-        </span>
+        <div className="summary-block-pair">
+          <Stepper value={stats.hp} onChange={(v) => onChangeField('hp', v)} />
+          <span className="summary-block-sep">/</span>
+          <input
+            type="number"
+            className="summary-block-max"
+            value={stats.hpMax}
+            onFocus={(e) => e.target.select()}
+            onChange={(e) => onChangeField('hpMax', toNumber(e.target.value))}
+          />
+        </div>
       </div>
-      <div className="summary-block">
+      <div className="summary-block summary-block--editable">
         <span className="summary-block-label">Evasão</span>
-        <span className="summary-block-value">{stats.evasion}</span>
+        <Stepper value={stats.evasion} onChange={(v) => onChangeField('evasion', v)} />
       </div>
-      <div className="summary-block">
+      <div className="summary-block summary-block--editable">
         <span className="summary-block-label">Armadura</span>
-        <span className="summary-block-value">
-          {stats.armor}/{stats.armorMax}
-        </span>
+        <div className="summary-block-pair">
+          <Stepper value={stats.armor} onChange={(v) => onChangeField('armor', v)} />
+          <span className="summary-block-sep">/</span>
+          <input
+            type="number"
+            className="summary-block-max"
+            value={stats.armorMax}
+            onFocus={(e) => e.target.select()}
+            onChange={(e) => onChangeField('armorMax', toNumber(e.target.value))}
+          />
+        </div>
       </div>
     </div>
   )
 }
 
-// Row of pips only, no interaction — used both in the dice box (read-only)
-// and could be reused anywhere else.
-function TrackPips({ label, value, max }) {
+// Row of pips for one track (Hope/Stress/Fatigue, or Fear for the DM).
+// Read-only elsewhere; in your own box each pip is clickable — click the
+// Nth pip to fill up to it, click the last filled one again to peel it
+// back. Same "nothing syncs until Anotar na Ficha" rule as the summary row.
+function TrackPips({ label, value, max, editable, onSetValue }) {
   const total = Math.max(max, 0)
   return (
     <div className="track-pips">
       <span className="track-pips-label">{label}</span>
       <div className="track-pips-dots">
-        {Array.from({ length: total }, (_, i) => i + 1).map((n) => (
-          <span key={n} className={`pip${n <= value ? ' pip--filled' : ''}`} />
-        ))}
+        {Array.from({ length: total }, (_, i) => i + 1).map((n) => {
+          const filled = n <= value
+          if (!editable) {
+            return <span key={n} className={`pip${filled ? ' pip--filled' : ''}`} />
+          }
+          return (
+            <button
+              key={n}
+              type="button"
+              className={`pip pip--clickable${filled ? ' pip--filled' : ''}`}
+              aria-label={`Marcar ${label.toLowerCase()} até ${n}`}
+              onClick={() => onSetValue(n === value ? n - 1 : n)}
+            />
+          )
+        })}
       </div>
-    </div>
-  )
-}
-
-// Pips + "+N / -N" control (editable only) — the only way to adjust
-// Hope/Stress/Fatigue directly from the dice box. Has a 5s cooldown
-// (controlled by Room, shared between + and -) to avoid spamming writes to
-// the database when several people click at once.
-function TrackRow({ label, value, max, editable, canAdjust, onAdjust }) {
-  const [amount, setAmount] = useState(1)
-  const limit = Math.max(max, 1)
-
-  return (
-    <div className="track-row">
-      {editable && (
-        <div className="track-remove">
-          <button
-            type="button"
-            className="track-button"
-            disabled={!canAdjust}
-            title={canAdjust ? `Remover ${label.toLowerCase()}` : 'Espera o cooldown acabar'}
-            onClick={() => onAdjust(-amount)}
-          >
-            -
-          </button>
-          <input
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            min={1}
-            max={limit}
-            value={amount}
-            onFocus={(e) => e.target.select()}
-            onClick={(e) => e.target.select()}
-            onChange={(e) => setAmount(Math.min(Math.max(1, toNumber(e.target.value)), limit))}
-          />
-        </div>
-      )}
-      <TrackPips label={label} value={value} max={max} />
-      {editable && (
-        <button
-          type="button"
-          className="track-button track-button--add"
-          disabled={!canAdjust}
-          title={canAdjust ? `Adicionar ${label.toLowerCase()}` : 'Espera o cooldown acabar'}
-          onClick={() => onAdjust(amount)}
-        >
-          +
-        </button>
-      )}
     </div>
   )
 }
@@ -147,17 +180,16 @@ function TrackRow({ label, value, max, editable, canAdjust, onAdjust }) {
 // Pip rows below the dice: Hope, Stress and Fatigue for players; only Fear
 // for the DM (in the physical Daggerheart game Fear is literally a row of
 // tokens, so this is faithful to the tabletop).
-export function PlayerPips({ name, stats, editable, canAdjust, onAdjust }) {
+export function PlayerPips({ name, stats, editable, onSetField }) {
   if (isDM(name)) {
     return (
       <div className="player-pips">
-        <TrackRow
+        <TrackPips
           label="Medo"
           value={stats.fear}
           max={stats.fearMax}
           editable={editable}
-          canAdjust={canAdjust?.('fear')}
-          onAdjust={(delta) => onAdjust('fear', delta)}
+          onSetValue={(v) => onSetField('fear', v)}
         />
       </div>
     )
@@ -165,29 +197,26 @@ export function PlayerPips({ name, stats, editable, canAdjust, onAdjust }) {
 
   return (
     <div className="player-pips">
-      <TrackRow
+      <TrackPips
         label="Esperança"
         value={stats.hopeTokens}
         max={stats.hopeTokensMax}
         editable={editable}
-        canAdjust={canAdjust?.('hopeTokens')}
-        onAdjust={(delta) => onAdjust('hopeTokens', delta)}
+        onSetValue={(v) => onSetField('hopeTokens', v)}
       />
-      <TrackRow
+      <TrackPips
         label="Estresse"
         value={stats.stress}
         max={stats.stressMax}
         editable={editable}
-        canAdjust={canAdjust?.('stress')}
-        onAdjust={(delta) => onAdjust('stress', delta)}
+        onSetValue={(v) => onSetField('stress', v)}
       />
-      <TrackRow
+      <TrackPips
         label="Fadiga"
         value={stats.fatigue}
         max={stats.fatigueMax}
         editable={editable}
-        canAdjust={canAdjust?.('fatigue')}
-        onAdjust={(delta) => onAdjust('fatigue', delta)}
+        onSetValue={(v) => onSetField('fatigue', v)}
       />
     </div>
   )
