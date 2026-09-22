@@ -49,7 +49,9 @@ const PATHS = {
 function Icon({ name, size }) {
   return (
     <svg
-      className="icon-glyph"
+      // Classe extra por nome (icon-glyph--gear etc.) só pra dar o gancho
+      // de hover específico de cada ícone lá no CSS.
+      className={`icon-glyph icon-glyph--${name}`}
       viewBox="0 0 24 24"
       aria-hidden="true"
       focusable="false"

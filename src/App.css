@@ -206,6 +206,84 @@ button.secundario:hover:not(:disabled) {
   stroke-width: 2;
   stroke-linecap: square;
   stroke-linejoin: miter;
+  transform-origin: center;
+}
+
+/* Engrenagem: no hover ela "respira" — gira pra um lado, volta um
+   pouquinho pro outro e assenta, em vez de girar sem parar. */
+.icon-glyph--gear {
+  transition: transform var(--dur) var(--ease-out);
+}
+.config-button:hover .icon-glyph--gear {
+  animation: gear-breathe 900ms var(--ease-out);
+}
+
+@keyframes gear-breathe {
+  0% {
+    transform: rotate(0deg);
+  }
+  35% {
+    transform: rotate(50deg);
+  }
+  60% {
+    transform: rotate(-12deg);
+  }
+  80% {
+    transform: rotate(8deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+/* Recarregar: giro completo só de ida, como se a seta desse a volta que
+   promete. */
+.config-button:hover .icon-glyph--refresh {
+  animation: refresh-spin 550ms var(--ease-out);
+}
+
+@keyframes refresh-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-360deg);
+  }
+}
+
+/* Status da mesa: as três barras dão uma leve sacudida de "lista sendo
+   folheada" em vez de girar (não faria sentido num ícone de linhas). */
+.config-button:hover .icon-glyph--list {
+  animation: list-riffle 400ms var(--ease-out);
+}
+
+@keyframes list-riffle {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-2px);
+  }
+  60% {
+    transform: translateY(1px);
+  }
+}
+
+/* Fechar modal: um pequeno giro de "x" ao mirar, reforça que é
+   clicável sem depender só da cor de hover. */
+.modal-close:hover .icon-glyph--close {
+  animation: close-wiggle 300ms var(--ease-out);
+}
+
+@keyframes close-wiggle {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(90deg);
+  }
 }
 
 .room-form,
@@ -473,6 +551,7 @@ input:focus-visible {
 .config-button:hover:not(:disabled) {
   color: var(--accent);
   border-color: var(--accent-border);
+  box-shadow: var(--shadow-sm), var(--glow-ember);
 }
 
 .settings-panel-name {
@@ -637,6 +716,20 @@ input:focus-visible {
 .stat-track-values input::-webkit-inner-spin-button {
   -webkit-appearance: none;
   margin: 0;
+}
+
+/* Campo de valor único (Evasão, Limiares): sem isto o <input type=number>
+   assume a largura intrínseca do navegador (~190px) em vez da célula do
+   grid, e vaza por cima da célula vizinha — era a causa do overlap. */
+.stat--simple input[type='number'] {
+  width: 100%;
+  box-sizing: border-box;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  --notch: 4px;
+  clip-path: var(--clip-pixel);
 }
 
 .stat--compact input[type='number'] {
