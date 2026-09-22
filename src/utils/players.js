@@ -5,8 +5,8 @@ export const PLAYERS = [
   { name: 'Gabriel', isDM: true, color: 'blue' },
   { name: 'Rafa', color: 'red' },
   { name: 'Ranny', color: 'yellow' },
-  { name: 'Samuel', color: 'grey' },
-  { name: 'Vini', color: 'purple' },
+  { name: 'Samuel', color: 'purple' },
+  { name: 'Vini', color: 'grey' },
 ]
 
 // Alphabetical order is automatic — no need to keep the array above sorted.
