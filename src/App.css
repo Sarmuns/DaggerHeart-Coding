@@ -270,19 +270,20 @@ button.secundario:hover:not(:disabled) {
   }
 }
 
-/* Fechar modal: um pequeno giro de "x" ao mirar, reforça que é
-   clicável sem depender só da cor de hover. */
+/* Fechar modal: as pontas do "x" esticam pra fora e voltam ao normal —
+   reforça que é clicável sem depender só da cor de hover (e sem o giro
+   de antes, que lia estranho num ícone tão simples). */
 .modal-close:hover .icon-glyph--close {
-  animation: close-wiggle 300ms var(--ease-out);
+  animation: close-grow 300ms var(--ease-out);
 }
 
-@keyframes close-wiggle {
+@keyframes close-grow {
   0%,
   100% {
-    transform: rotate(0deg);
+    transform: scale(1);
   }
   50% {
-    transform: rotate(90deg);
+    transform: scale(1.35);
   }
 }
 
