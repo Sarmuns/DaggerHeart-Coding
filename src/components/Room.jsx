@@ -19,6 +19,7 @@ import {
 import { DEFAULT_STATS, statsFromPresence } from '../utils/playerStats'
 import { loadPlayerStats, savePlayerStats } from '../utils/playerStatsDb'
 import { isCritical, pickCriticalEffect } from '../utils/criticalEffects'
+import { playRollSound, playCriticalSound } from '../utils/sound'
 import ColorSettingsPanel from './ColorSettingsPanel'
 import Icon from './Icon'
 import IconButton from './IconButton'
@@ -141,6 +142,7 @@ function Room({ room, player, onUpdatePlayer }) {
 
   function triggerCriticalEffect(type, presenceKey) {
     setCriticalEffect({ id: crypto.randomUUID(), type, presenceKey })
+    playCriticalSound()
   }
   // Only whoever has the DM tag can toggle this — for everyone else it
   // stays fixed on the default (duality). The chosen value goes into
@@ -261,6 +263,7 @@ function Room({ room, player, onUpdatePlayer }) {
       .on('broadcast', { event: 'rolling' }, ({ payload }) => {
         clearResults()
         if (payload.presenceKey === presenceKeyRef.current) return
+        playRollSound()
         diceSetRefsRef.current.get(payload.presenceKey)?.startSpin(payload.mode)
       })
       .on('broadcast', { event: 'result' }, ({ payload }) => {
@@ -430,6 +433,7 @@ function Room({ room, player, onUpdatePlayer }) {
     setRolling(true)
     setLastResult(null)
     clearResults()
+    playRollSound()
 
     channelRef.current?.send({
       type: 'broadcast',
@@ -493,6 +497,9 @@ function Room({ room, player, onUpdatePlayer }) {
 
   const myDiceSystem = selectedDiceSystem
   const filteredHistory = dateFilter ? history.filter((item) => item.dateISO === dateFilter) : history
+  // Fear tokens da mesa: cada rolagem "com Medo" gera 1, seguindo a regra do
+  // Daggerheart — derivado do histórico já carregado, sem coluna nova no banco.
+  const fearTokens = history.filter((item) => item.winner === 'fear').length
 
   return (
     <section className="room">
@@ -503,6 +510,10 @@ function Room({ room, player, onUpdatePlayer }) {
             <strong>{room.code}</strong>
           </p>
         </div>
+        <span className="fear-tokens" title="Fear tokens da mesa">
+          <Icon name="flame" />
+          {fearTokens}
+        </span>
         <IconButton onClick={() => window.location.reload()} label="Atualizar sala" title="Recarregar sala">
           <Icon name="refresh" />
         </IconButton>

@@ -50,6 +50,12 @@ const PATHS = {
       <rect x="14.5" y="14.5" width="2" height="2" fill="currentColor" />
     </>
   ),
+  // Chama (Fear tokens da mesa)
+  flame: (
+    <>
+      <path d="M12 2c1 3-3 4-3 8a3 3 0 0 0 6 0c1.5 1.5 2 3 2 5a5 5 0 0 1-10 0c0-4 2-5 3-9 .5 1 .8 2 1 3z" />
+    </>
+  ),
 }
 
 function Icon({ name, size }) {

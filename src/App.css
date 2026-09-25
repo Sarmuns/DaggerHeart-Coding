@@ -545,6 +545,29 @@ input:focus-visible {
   clip-path: var(--clip-pixel);
 }
 
+/* Contador de Fear tokens da mesa: brasa vermelha fixa no cabeçalho,
+   somando 1 a cada rolagem "com Medo" (derivado do histórico). */
+.fear-tokens {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  font-family: var(--pixel);
+  font-size: 15px;
+  color: var(--fear);
+  padding: 4px 8px;
+  border: 1.5px solid var(--fear);
+  background: rgba(200, 80, 58, 0.12);
+  --notch: 3px;
+  clip-path: var(--clip-pixel);
+}
+
+.fear-tokens .icon-glyph {
+  width: 14px;
+  height: 14px;
+  color: var(--fear);
+}
+
 .config-button {
   display: inline-flex;
   align-items: center;
