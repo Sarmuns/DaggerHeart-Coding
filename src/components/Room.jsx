@@ -20,7 +20,7 @@ import { loadPlayerStats, savePlayerStats } from '../utils/playerStatsDb'
 import { loadFearLog, logFearChange } from '../utils/fearDb'
 import { colorForPlayer } from '../utils/players'
 import { isCritical, pickCriticalEffect } from '../utils/criticalEffects'
-import { playRollSound, playCriticalSound } from '../utils/sound'
+import { playCriticalSound } from '../utils/sound'
 import ColorSettingsPanel from './ColorSettingsPanel'
 import Icon from './Icon'
 import IconButton from './IconButton'
@@ -33,6 +33,8 @@ const CRITICAL_COLOR = '#aa3bff'
 const BRAZIL_TIMEZONE = 'America/Sao_Paulo'
 const RESULT_DURATION_MS = 5000
 const FEAR_MAX = 12
+const REACTION_DURATION_MS = 2600
+const REACTION_EMOJIS = ['👏', '😱', '💀', '🔥']
 // Date filter for the history is already implemented, just hidden from the
 // UI for now — flip to true to bring it back without rewriting anything.
 const SHOW_DATE_FILTER = false
@@ -128,6 +130,32 @@ function Room({ room, player, onUpdatePlayer }) {
   // itself after a few seconds — the history keeps the permanent record.
   const [resultsByPlayer, setResultsByPlayer] = useState({})
   const resultTimersRef = useRef(new Map())
+  // Reações efêmeras (👏 😱 …) que os outros mandam pra caixa de quem
+  // rolou — só broadcast, nada vai pro banco. Cada uma some sozinha.
+  const [reactionsByPlayer, setReactionsByPlayer] = useState({})
+
+  function pushReaction(target, emoji, from) {
+    const id = crypto.randomUUID()
+    setReactionsByPlayer((current) => ({
+      ...current,
+      [target]: [...(current[target] ?? []), { id, emoji, from }],
+    }))
+    setTimeout(() => {
+      setReactionsByPlayer((current) => ({
+        ...current,
+        [target]: (current[target] ?? []).filter((r) => r.id !== id),
+      }))
+    }, REACTION_DURATION_MS)
+  }
+
+  function sendReaction(target, emoji) {
+    pushReaction(target, emoji, player.name)
+    channelRef.current?.send({
+      type: 'broadcast',
+      event: 'reaction',
+      payload: { target, emoji, from: player.name },
+    })
+  }
 
   function setPlayerResult(presenceKey, result) {
     setResultsByPlayer((current) => ({ ...current, [presenceKey]: result }))
@@ -310,7 +338,6 @@ function Room({ room, player, onUpdatePlayer }) {
       .on('broadcast', { event: 'rolling' }, ({ payload }) => {
         clearResults()
         if (payload.presenceKey === presenceKeyRef.current) return
-        playRollSound()
         diceSetRefsRef.current.get(payload.presenceKey)?.startSpin(payload.mode)
       })
       .on('broadcast', { event: 'result' }, ({ payload }) => {
@@ -328,6 +355,9 @@ function Room({ room, player, onUpdatePlayer }) {
         // everyone in the room sees the same effect, not an independent
         // pick per client.
         if (payload.effect) triggerCriticalEffect(payload.effect, payload.presenceKey)
+      })
+      .on('broadcast', { event: 'reaction' }, ({ payload }) => {
+        pushReaction(payload.target, payload.emoji, payload.from)
       })
       .on('presence', { event: 'sync' }, () => {
         const state = channel.presenceState()
@@ -490,7 +520,6 @@ function Room({ room, player, onUpdatePlayer }) {
     setRolling(true)
     setLastResult(null)
     clearResults()
-    playRollSound()
 
     channelRef.current?.send({
       type: 'broadcast',
@@ -670,6 +699,9 @@ function Room({ room, player, onUpdatePlayer }) {
               onCriticalEffectEnd={() => setCriticalEffect(null)}
               onRoll={isMe ? () => roll() : null}
               rolling={isMe ? rolling : false}
+              reactions={reactionsByPlayer[p.presenceKey] ?? []}
+              reactionEmojis={REACTION_EMOJIS}
+              onReact={isMe ? null : (emoji) => sendReaction(p.presenceKey, emoji)}
             />
           )
         })}

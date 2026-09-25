@@ -49,6 +49,9 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
     onCriticalEffectEnd,
     onRoll,
     rolling,
+    reactions = [],
+    reactionEmojis = [],
+    onReact,
   },
   ref,
 ) {
@@ -382,6 +385,15 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
           onEnd={onCriticalEffectEnd}
         />
       )}
+      {reactions.length > 0 && (
+        <div className="reaction-float" aria-hidden="true">
+          {reactions.map((r, i) => (
+            <span key={r.id} className="reaction-float-item" style={{ '--i': i % 5 }} title={r.from}>
+              {r.emoji}
+            </span>
+          ))}
+        </div>
+      )}
       <span className="dice-set-name" style={{ color }}>
         {name}
       </span>
@@ -440,6 +452,15 @@ const PlayerDiceSet = forwardRef(function PlayerDiceSet(
         >
           {resultText}
         </p>
+      )}
+      {onReact && (
+        <div className="reaction-bar" role="group" aria-label={`Reagir à rolagem de ${name}`}>
+          {reactionEmojis.map((emoji) => (
+            <button key={emoji} type="button" className="reaction-btn" onClick={() => onReact(emoji)}>
+              {emoji}
+            </button>
+          ))}
+        </div>
       )}
       {stats && (
         <PlayerPips name={name} stats={stats} editable={statsEditable} onSetField={onChangeStatField} />

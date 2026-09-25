@@ -1186,6 +1186,97 @@ input:focus-visible {
     var(--glow-ember);
 }
 
+/* ---------- Reações ----------
+   Barra de emojis só nas caixas dos outros (na sua não faz sentido reagir
+   a si mesmo). Botões pequenos e discretos, acendem no hover. */
+.reaction-bar {
+  display: flex;
+  gap: var(--sp-1);
+  justify-content: center;
+}
+
+.reaction-btn {
+  width: 34px;
+  height: 30px;
+  padding: 0;
+  font-size: 16px;
+  line-height: 1;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.25);
+  box-shadow: none;
+  --notch: 3px;
+  clip-path: var(--clip-pixel);
+  cursor: pointer;
+  filter: saturate(0.6);
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    filter var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
+}
+
+.reaction-btn:hover {
+  transform: translateY(-2px) scale(1.12);
+  filter: saturate(1);
+  border-color: var(--accent-border);
+}
+
+.reaction-btn:active {
+  transform: scale(0.95);
+}
+
+/* Emojis recebidos sobem flutuando pelo card e somem — camada por cima de
+   tudo, sem capturar clique. Cada um sai de uma coluna diferente (--i). */
+.reaction-float {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: var(--z-effect);
+  overflow: hidden;
+}
+
+.reaction-float-item {
+  position: absolute;
+  bottom: 30%;
+  left: calc(18% + var(--i) * 16%);
+  font-size: 30px;
+  line-height: 1;
+  filter: drop-shadow(2px 2px 0 rgba(0, 0, 0, 0.6));
+  animation: reaction-rise 2.6s var(--ease-out) forwards;
+}
+
+@keyframes reaction-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.6);
+  }
+  12% {
+    opacity: 1;
+    transform: translateY(0) scale(1.15);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-140px) scale(0.9);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reaction-float-item {
+    animation: reaction-fade 2.6s linear forwards;
+  }
+  @keyframes reaction-fade {
+    0%,
+    70% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+}
+
 /* Placa de nome: faixa de pedra atravessando o topo do card. */
 .dice-set-name {
   display: block;

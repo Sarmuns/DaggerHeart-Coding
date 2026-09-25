@@ -22,27 +22,6 @@ function tone(audioCtx, freq, startOffset, duration, type, peakGain) {
   osc.stop(start + duration + 0.02)
 }
 
-// Short filtered noise burst — a dice clack, not a full roll rattle.
-export function playRollSound() {
-  const audioCtx = getCtx()
-  const duration = 0.08
-  const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * duration, audioCtx.sampleRate)
-  const data = buffer.getChannelData(0)
-  for (let i = 0; i < data.length; i++) {
-    data[i] = (Math.random() * 2 - 1) * (1 - i / data.length)
-  }
-  const noise = audioCtx.createBufferSource()
-  noise.buffer = buffer
-  const filter = audioCtx.createBiquadFilter()
-  filter.type = 'highpass'
-  filter.frequency.value = 900
-  const gain = audioCtx.createGain()
-  gain.gain.setValueAtTime(0.3, audioCtx.currentTime)
-  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration)
-  noise.connect(filter).connect(gain).connect(audioCtx.destination)
-  noise.start()
-}
-
 // Rising three-note chime for a Critical.
 export function playCriticalSound() {
   const audioCtx = getCtx()
