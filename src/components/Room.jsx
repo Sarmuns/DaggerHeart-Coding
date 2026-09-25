@@ -11,13 +11,13 @@ import {
 import {
   DICE_SYSTEM_D20,
   DICE_SYSTEM_DUALITY,
-  isDM,
   primaryStyle,
   secondaryStyle,
   defaultDiceSystemFor,
 } from '../utils/diceSystem'
 import { DEFAULT_STATS, statsFromPresence } from '../utils/playerStats'
 import { loadPlayerStats, savePlayerStats } from '../utils/playerStatsDb'
+import { loadFear, logFearChange } from '../utils/fearDb'
 import { isCritical, pickCriticalEffect } from '../utils/criticalEffects'
 import { playRollSound, playCriticalSound } from '../utils/sound'
 import ColorSettingsPanel from './ColorSettingsPanel'
@@ -30,6 +30,7 @@ import PlayerDiceSet from './PlayerDiceSet'
 const CRITICAL_COLOR = '#aa3bff'
 const BRAZIL_TIMEZONE = 'America/Sao_Paulo'
 const RESULT_DURATION_MS = 5000
+const FEAR_MAX = 12
 // Date filter for the history is already implemented, just hidden from the
 // UI for now — flip to true to bring it back without rewriting anything.
 const SHOW_DATE_FILTER = false
@@ -130,6 +131,10 @@ function Room({ room, player, onUpdatePlayer }) {
   }
 
   const [history, setHistory] = useState([])
+  // Fear tokens da mesa — compartilhado entre todos, cada ajuste vira uma
+  // linha em fear_log (ver utils/fearDb). Qualquer jogador pode mexer; na
+  // prática só o mestre costuma usar os botões.
+  const [fear, setFear] = useState(0)
   const [dateFilter, setDateFilter] = useState('')
   const [panelOpen, setPanelOpen] = useState(false)
   const [statusOpen, setStatusOpen] = useState(false)
@@ -237,6 +242,9 @@ function Room({ room, player, onUpdatePlayer }) {
     }
 
     loadHistory()
+    loadFear(room.roomId).then((value) => {
+      if (active) setFear(value)
+    })
 
     const channel = supabase.channel(`room:${room.roomId}`, {
       config: { presence: { key: presenceKeyRef.current } },
@@ -259,6 +267,11 @@ function Room({ room, player, onUpdatePlayer }) {
         (payload) => {
           setHistory((current) => current.filter((item) => item.id !== payload.old.id))
         },
+      )
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'fear_log', filter: `room_id=eq.${room.roomId}` },
+        (payload) => setFear(payload.new.valor),
       )
       .on('broadcast', { event: 'rolling' }, ({ payload }) => {
         clearResults()
@@ -400,6 +413,14 @@ function Room({ room, player, onUpdatePlayer }) {
     setHistory([])
   }
 
+  function adjustFear(step) {
+    const next = Math.max(0, Math.min(FEAR_MAX, fear + step))
+    const delta = next - fear
+    if (delta === 0) return
+    setFear(next)
+    logFearChange(room.roomId, player.name, delta, next)
+  }
+
   async function recordRoll(result, modifier, diceSystem) {
     const total =
       diceSystem === DICE_SYSTEM_D20 ? result.hope : calculateTotal(result.hope, result.fear, modifier)
@@ -497,9 +518,6 @@ function Room({ room, player, onUpdatePlayer }) {
 
   const myDiceSystem = selectedDiceSystem
   const filteredHistory = dateFilter ? history.filter((item) => item.dateISO === dateFilter) : history
-  // Fear tokens da mesa: cada rolagem "com Medo" gera 1, seguindo a regra do
-  // Daggerheart — derivado do histórico já carregado, sem coluna nova no banco.
-  const fearTokens = history.filter((item) => item.winner === 'fear').length
 
   return (
     <section className="room">
@@ -511,8 +529,26 @@ function Room({ room, player, onUpdatePlayer }) {
           </p>
         </div>
         <span className="fear-tokens" title="Fear tokens da mesa">
+          <button
+            type="button"
+            className="fear-tokens-btn"
+            aria-label="Remover Fear"
+            onClick={() => adjustFear(-1)}
+            disabled={fear <= 0}
+          >
+            −
+          </button>
           <Icon name="flame" />
-          {fearTokens}
+          {fear}
+          <button
+            type="button"
+            className="fear-tokens-btn"
+            aria-label="Adicionar Fear"
+            onClick={() => adjustFear(1)}
+            disabled={fear >= FEAR_MAX}
+          >
+            +
+          </button>
         </span>
         <IconButton onClick={() => window.location.reload()} label="Atualizar sala" title="Recarregar sala">
           <Icon name="refresh" />
@@ -600,19 +636,17 @@ function Room({ room, player, onUpdatePlayer }) {
         />
       )}
 
-      {isDM(player.name) && (
-        <PillGroup>
-          <Pill active={selectedDiceSystem === DICE_SYSTEM_D20} onClick={() => setSelectedDiceSystem(DICE_SYSTEM_D20)}>
-            d20
-          </Pill>
-          <Pill
-            active={selectedDiceSystem === DICE_SYSTEM_DUALITY}
-            onClick={() => setSelectedDiceSystem(DICE_SYSTEM_DUALITY)}
-          >
-            2d12
-          </Pill>
-        </PillGroup>
-      )}
+      <PillGroup>
+        <Pill active={selectedDiceSystem === DICE_SYSTEM_D20} onClick={() => setSelectedDiceSystem(DICE_SYSTEM_D20)}>
+          d20
+        </Pill>
+        <Pill
+          active={selectedDiceSystem === DICE_SYSTEM_DUALITY}
+          onClick={() => setSelectedDiceSystem(DICE_SYSTEM_DUALITY)}
+        >
+          2d12
+        </Pill>
+      </PillGroup>
 
       <PillGroup>
         <Pill active={rollMode === 'normal'} onClick={() => setRollMode('normal')}>

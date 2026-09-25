@@ -2,7 +2,7 @@
 // To add/remove a player, change the DM tag or color, edit only here.
 export const PLAYERS = [
   { name: 'Adriano', color: 'green' },
-  { name: 'Gabriel', isDM: true, color: 'blue' },
+  { name: 'Gabriel', color: 'blue' },
   { name: 'Rafa', color: 'red' },
   { name: 'Ranny', color: 'yellow' },
   { name: 'Samuel', color: 'purple' },

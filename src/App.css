@@ -546,7 +546,7 @@ input:focus-visible {
 }
 
 /* Contador de Fear tokens da mesa: brasa vermelha fixa no cabeçalho,
-   somando 1 a cada rolagem "com Medo" (derivado do histórico). */
+   com +/- pra qualquer jogador ajustar (todo ajuste vai logado em fear_log). */
 .fear-tokens {
   display: inline-flex;
   align-items: center;
@@ -566,6 +566,32 @@ input:focus-visible {
   width: 14px;
   height: 14px;
   color: var(--fear);
+}
+
+.fear-tokens-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid var(--fear);
+  background: transparent;
+  color: var(--fear);
+  font-family: var(--pixel);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.fear-tokens-btn:hover:not(:disabled) {
+  background: var(--fear);
+  color: var(--bg);
+}
+
+.fear-tokens-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
 .config-button {

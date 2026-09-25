@@ -52,6 +52,18 @@ create table rolls (
   resultado text not null,
   criado_em timestamp default now()
 );
+
+-- Fear tokens da mesa (compartilhado, qualquer jogador ajusta) + log de
+-- quem mudou o quê. O valor atual é sempre o `valor` da linha mais recente
+-- da sala.
+create table fear_log (
+  id uuid primary key default gen_random_uuid(),
+  room_id uuid references rooms(id) on delete cascade,
+  jogador text not null,
+  delta int not null,
+  valor int not null,
+  criado_em timestamp default now()
+);
 ```
 - [ ] Rodar o SQL acima no Supabase
 - [ ] Ativar Realtime na tabela `rolls` (Database > Replication)
