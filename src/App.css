@@ -545,53 +545,137 @@ input:focus-visible {
   clip-path: var(--clip-pixel);
 }
 
-/* Contador de Fear tokens da mesa: brasa vermelha fixa no cabeçalho,
-   com +/- pra qualquer jogador ajustar (todo ajuste vai logado em fear_log). */
-.fear-tokens {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-  font-family: var(--pixel);
-  font-size: 15px;
-  color: var(--fear);
-  padding: 4px 8px;
-  border: 1.5px solid var(--fear);
-  background: rgba(200, 80, 58, 0.12);
-  --notch: 3px;
+/* ---------- Medo da Mesa ----------
+   Placa de pedra abaixo do cabeçalho com a trilha de 12 tokens de Medo do
+   Daggerheart. É da mesa (não de um jogador): qualquer um clica num pip ou
+   no −/+, e cada mudança vai pro fear_log e aparece no histórico. */
+.fear-board {
+  width: 100%;
+  max-width: 480px;
+  box-sizing: border-box;
+  margin: 0 auto;
+  padding: var(--sp-2) var(--sp-3) var(--sp-3);
+  border: 1px solid var(--border);
+  border-top: 2px solid rgba(200, 80, 58, 0.6);
+  background: linear-gradient(180deg, rgba(200, 80, 58, 0.1), rgba(0, 0, 0, 0.25) 70%), var(--bg-elev);
+  box-shadow: var(--shadow-sm);
+  --notch: 4px;
   clip-path: var(--clip-pixel);
 }
 
-.fear-tokens .icon-glyph {
-  width: 14px;
-  height: 14px;
+.fear-board-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-2);
+}
+
+.fear-board-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--pixel);
+  font-size: 15px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
   color: var(--fear);
 }
 
-.fear-tokens-btn {
+.fear-board-title .icon-glyph {
+  width: 15px;
+  height: 15px;
+  stroke-width: 2.2;
+}
+
+.fear-board-count {
+  font-family: var(--pixel);
+  font-size: 22px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-h);
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.6);
+}
+
+.fear-board-max {
+  margin-left: 3px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.fear-board-body {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.fear-board-body .track-pips {
+  flex: 1;
+  min-width: 0;
+  justify-content: center;
+}
+
+.fear-board-body .track-pips-label {
+  display: none;
+}
+
+.fear-board-body .track-pips-dots {
+  gap: 5px;
+  justify-content: center;
+}
+
+.fear-board-body .pip {
+  width: 14px;
+  height: 14px;
+}
+
+.fear-board-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 36px;
+  height: 36px;
   padding: 0;
-  border: 1px solid var(--fear);
-  background: transparent;
-  color: var(--fear);
+  flex-shrink: 0;
   font-family: var(--pixel);
-  font-size: 13px;
+  font-size: 18px;
   line-height: 1;
+  color: var(--fear);
+  border: 1.5px solid rgba(200, 80, 58, 0.6);
+  background: rgba(0, 0, 0, 0.25);
+  box-shadow: var(--shadow-sm);
+  --notch: 3px;
+  clip-path: var(--clip-pixel);
   cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
 }
 
-.fear-tokens-btn:hover:not(:disabled) {
+.fear-board-btn:hover:not(:disabled) {
   background: var(--fear);
   color: var(--bg);
 }
 
-.fear-tokens-btn:disabled {
+.fear-board-btn:disabled {
   opacity: 0.35;
   cursor: default;
+  box-shadow: none;
+}
+
+/* Variante vermelha dos pips: mesma trilha das outras, só que sangue de
+   masmorra em vez de brasa dourada. */
+.track-pips--fear .pip--filled {
+  background: var(--fear);
+  border-color: #e07a62;
+  box-shadow: 0 0 6px rgba(200, 80, 58, 0.55);
+}
+
+.track-pips--fear .pip--clickable:hover {
+  border-color: var(--fear);
+  background: rgba(200, 80, 58, 0.2);
+}
+
+.track-pips--fear .pip--clickable.pip--filled:hover {
+  background: #e07a62;
 }
 
 .config-button {
@@ -1709,6 +1793,33 @@ input:focus-visible {
   min-width: 128px;
 }
 
+/* Mudança de Medo no histórico: fundo levemente avermelhado pra separar
+   das rolagens à primeira vista, sem virar um alerta. */
+.history-item--fear {
+  background: linear-gradient(90deg, rgba(200, 80, 58, 0.1), transparent 60%), var(--bg-elev);
+}
+
+.history-fear-delta {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.history-result--fear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  color: var(--fear);
+}
+
+.history-result--fear .icon-glyph {
+  width: 15px;
+  height: 15px;
+}
+
 .history-time {
   font-family: var(--mono);
   font-variant-numeric: tabular-nums;
@@ -1731,7 +1842,8 @@ input:focus-visible {
   .history-player {
     order: 2;
   }
-  .history-dice {
+  .history-dice,
+  .history-fear-delta {
     order: 3;
   }
   .history-result {

@@ -17,7 +17,8 @@ import {
 } from '../utils/diceSystem'
 import { DEFAULT_STATS, statsFromPresence } from '../utils/playerStats'
 import { loadPlayerStats, savePlayerStats } from '../utils/playerStatsDb'
-import { loadFear, logFearChange } from '../utils/fearDb'
+import { loadFearLog, logFearChange } from '../utils/fearDb'
+import { colorForPlayer } from '../utils/players'
 import { isCritical, pickCriticalEffect } from '../utils/criticalEffects'
 import { playRollSound, playCriticalSound } from '../utils/sound'
 import ColorSettingsPanel from './ColorSettingsPanel'
@@ -26,6 +27,7 @@ import IconButton from './IconButton'
 import PartyStatusModal from './PartyStatusModal'
 import { Pill, PillGroup } from './Pill'
 import PlayerDiceSet from './PlayerDiceSet'
+import { TrackPips } from './PlayerSheet'
 
 const CRITICAL_COLOR = '#aa3bff'
 const BRAZIL_TIMEZONE = 'America/Sao_Paulo'
@@ -75,6 +77,8 @@ function rowToHistoryItem(row) {
   const date = recordDate(row.criado_em)
   return {
     id: row.id,
+    kind: 'roll',
+    at: date.getTime(),
     player: row.jogador,
     color: row.cor,
     hopeColor: row.cor_hope,
@@ -87,6 +91,30 @@ function rowToHistoryItem(row) {
     dateISO: isoDateBrazil(date),
     modifier: row.modificador_tipo ? { type: row.modificador_tipo, value: row.modificador_valor } : null,
   }
+}
+
+// Uma mudança de Medo vira um item do mesmo histórico das rolagens, pra
+// ficar visível quem mexeu e quando.
+function fearRowToHistoryItem(row) {
+  const date = recordDate(row.criado_em)
+  return {
+    id: row.id,
+    kind: 'fear',
+    at: date.getTime(),
+    player: row.jogador,
+    color: colorForPlayer(row.jogador),
+    delta: row.delta,
+    value: row.valor,
+    time: formatTime(date),
+    dateISO: isoDateBrazil(date),
+  }
+}
+
+function mergeHistory(current, items) {
+  const seen = new Set(current.map((item) => item.id))
+  const fresh = items.filter((item) => !seen.has(item.id))
+  if (fresh.length === 0) return current
+  return [...current, ...fresh].sort((a, b) => b.at - a.at)
 }
 
 function Room({ room, player, onUpdatePlayer }) {
@@ -237,14 +265,20 @@ function Room({ room, player, onUpdatePlayer }) {
         .limit(30)
 
       if (active && !error && data) {
-        setHistory(data.map(rowToHistoryItem))
+        setHistory((current) => mergeHistory(current, data.map(rowToHistoryItem)))
       }
     }
 
+    async function loadFear() {
+      const rows = await loadFearLog(room.roomId)
+      if (!active) return
+      setFear(rows[0]?.valor ?? 0)
+      setHistory((current) => mergeHistory(current, rows.map(fearRowToHistoryItem)))
+    }
+
+    setHistory([])
     loadHistory()
-    loadFear(room.roomId).then((value) => {
-      if (active) setFear(value)
-    })
+    loadFear()
 
     const channel = supabase.channel(`room:${room.roomId}`, {
       config: { presence: { key: presenceKeyRef.current } },
@@ -255,10 +289,7 @@ function Room({ room, player, onUpdatePlayer }) {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'rolls', filter: `room_id=eq.${room.roomId}` },
         (payload) => {
-          setHistory((current) => {
-            if (current.some((item) => item.id === payload.new.id)) return current
-            return [rowToHistoryItem(payload.new), ...current]
-          })
+          setHistory((current) => mergeHistory(current, [rowToHistoryItem(payload.new)]))
         },
       )
       .on(
@@ -271,7 +302,10 @@ function Room({ room, player, onUpdatePlayer }) {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'fear_log', filter: `room_id=eq.${room.roomId}` },
-        (payload) => setFear(payload.new.valor),
+        (payload) => {
+          setFear(payload.new.valor)
+          setHistory((current) => mergeHistory(current, [fearRowToHistoryItem(payload.new)]))
+        },
       )
       .on('broadcast', { event: 'rolling' }, ({ payload }) => {
         clearResults()
@@ -413,12 +447,14 @@ function Room({ room, player, onUpdatePlayer }) {
     setHistory([])
   }
 
-  function adjustFear(step) {
-    const next = Math.max(0, Math.min(FEAR_MAX, fear + step))
-    const delta = next - fear
+  async function setFearTo(target) {
+    const next = Math.max(0, Math.min(FEAR_MAX, target))
+    const previous = fear
+    const delta = next - previous
     if (delta === 0) return
     setFear(next)
-    logFearChange(room.roomId, player.name, delta, next)
+    const ok = await logFearChange(room.roomId, player.name, delta, next)
+    if (!ok) setFear(previous)
   }
 
   async function recordRoll(result, modifier, diceSystem) {
@@ -528,28 +564,6 @@ function Room({ room, player, onUpdatePlayer }) {
             <strong>{room.code}</strong>
           </p>
         </div>
-        <span className="fear-tokens" title="Fear tokens da mesa">
-          <button
-            type="button"
-            className="fear-tokens-btn"
-            aria-label="Remover Fear"
-            onClick={() => adjustFear(-1)}
-            disabled={fear <= 0}
-          >
-            −
-          </button>
-          <Icon name="flame" />
-          {fear}
-          <button
-            type="button"
-            className="fear-tokens-btn"
-            aria-label="Adicionar Fear"
-            onClick={() => adjustFear(1)}
-            disabled={fear >= FEAR_MAX}
-          >
-            +
-          </button>
-        </span>
         <IconButton onClick={() => window.location.reload()} label="Atualizar sala" title="Recarregar sala">
           <Icon name="refresh" />
         </IconButton>
@@ -569,6 +583,40 @@ function Room({ room, player, onUpdatePlayer }) {
           </button>
         </div>
       )}
+
+      <section className="fear-board" aria-label="Medo da mesa">
+        <div className="fear-board-head">
+          <span className="fear-board-title">
+            <Icon name="flame" />
+            Medo da Mesa
+          </span>
+          <span className="fear-board-count">
+            {fear}
+            <span className="fear-board-max">/ {FEAR_MAX}</span>
+          </span>
+        </div>
+        <div className="fear-board-body">
+          <button
+            type="button"
+            className="fear-board-btn"
+            aria-label="Remover 1 de Medo"
+            onClick={() => setFearTo(fear - 1)}
+            disabled={fear <= 0}
+          >
+            −
+          </button>
+          <TrackPips label="" value={fear} max={FEAR_MAX} editable onSetValue={setFearTo} tone="fear" />
+          <button
+            type="button"
+            className="fear-board-btn"
+            aria-label="Adicionar 1 de Medo"
+            onClick={() => setFearTo(fear + 1)}
+            disabled={fear >= FEAR_MAX}
+          >
+            +
+          </button>
+        </div>
+      </section>
 
       {panelOpen && (
         <ColorSettingsPanel
@@ -720,7 +768,22 @@ function Room({ room, player, onUpdatePlayer }) {
           {dateFilter && filteredHistory.length === 0 && (
             <li className="history-empty">Nenhuma rolagem nesse dia.</li>
           )}
-          {filteredHistory.map((item) => (
+          {filteredHistory.map((item) =>
+            item.kind === 'fear' ? (
+              <li key={item.id} className="history-item history-item--fear" style={{ borderLeftColor: item.color }}>
+                <span className="history-time">{item.time}</span>
+                <span className="history-player" style={{ color: item.color }}>
+                  {item.player}
+                </span>
+                <span className="history-fear-delta">
+                  {item.delta > 0 ? `+${item.delta}` : item.delta} Medo
+                </span>
+                <span className="history-result history-result--fear">
+                  <Icon name="flame" />
+                  {item.value}
+                </span>
+              </li>
+            ) : (
             <li key={item.id} className="history-item" style={{ borderLeftColor: item.color }}>
               <span className="history-time">{item.time}</span>
               <span className="history-player" style={{ color: item.color }}>
@@ -745,7 +808,8 @@ function Room({ room, player, onUpdatePlayer }) {
                 {diceResultText(item)}
               </span>
             </li>
-          ))}
+            ),
+          )}
         </ul>
       </div>
 
